@@ -235,13 +235,13 @@ AgeConditionalStats=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEva
 
 %% Plot the life cycle profiles of capital and labour for the inital and final eqm.
 
-% figure(1)
-% subplot(3,1,1); plot(1:1:Params.J,AgeConditionalStats.H.Mean)
-% title('Life Cycle Profile: Hours Worked')
-% subplot(3,1,2); plot(1:1:Params.J,AgeConditionalStats.L.Mean)
-% title('Life Cycle Profile: Labour Supply')
-% subplot(3,1,3); plot(1:1:Params.J,AgeConditionalStats.K.Mean)
-% title('Life Cycle Profile: Assets')
+figure(1)
+subplot(3,1,1); plot(1:1:Params.J,AgeConditionalStats.H.Mean)
+title('Life Cycle Profile: Hours Worked')
+subplot(3,1,2); plot(1:1:Params.J,AgeConditionalStats.L.Mean)
+title('Life Cycle Profile: Labour Supply')
+subplot(3,1,3); plot(1:1:Params.J,AgeConditionalStats.K.Mean)
+title('Life Cycle Profile: Assets')
 % saveas(figure_c,'./SavedOutput/Graphs/OLGModel6_LifeCycleProfiles','pdf')
 
 %% Calculate some aggregates and print findings about them
@@ -292,17 +292,15 @@ effectiveL_timeseries=AggVars.L.Mean*cumprod((1+Params.g)*ones(1,T)).*cumprod((1
 
 N_timeseries=cumprod((1+Params.n)*ones(1,T))*Params.N0; % Population
 
-% subplot(2,2,1); plot(1:1:T, Y_timeseries,1:1:T, K_timeseries,1:1:T, effectiveL_timeseries)
-% legend('Output','Physical Capital','Effective Labor input')
-% 
-% subplot(2,2,2); plot(1:1:T, Ypercapita_timeseries,1:1:T, w_timeseries)
-% legend('Output per capita','wage')
-% 
-% subplot(2,2,3); plot(1:1:T, N_timeseries)
-% legend('Population')
-% 
-% subplot(2,2,4); plot(1:1:T, r_timeseries)
-% legend('Interest rate')
+figure(2)
+subplot(2,2,1); plot(1:1:T, Y_timeseries,1:1:T, K_timeseries,1:1:T, effectiveL_timeseries)
+legend('Output','Physical Capital','Effective Labor input')
+subplot(2,2,2); plot(1:1:T, Ypercapita_timeseries,1:1:T, w_timeseries)
+legend('Output per capita','wage')
+subplot(2,2,3); plot(1:1:T, N_timeseries)
+legend('Population')
+subplot(2,2,4); plot(1:1:T, r_timeseries)
+legend('Interest rate')
 
 
 

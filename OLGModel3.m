@@ -149,16 +149,16 @@ toc
 % Note that because aging is completely exogenous it is not affected by the
 % general equilibrium (initial or final), nor does it change over the
 % transition. (We will allow this in a more advanced model later on.)
-% % figure_c=figure_c+1;
-% % figure(figure_c)
-% % hold on
-% % pyramidright = barh((1:1:Params.J)+Params.agejshifter,Params.mewj/2,'hist'); % I need the divided by two to get the symmetry (half on each 'side')
-% % pyramidleft = barh((1:1:Params.J)+Params.agejshifter,-Params.mewj/2,'hist'); % 'minus', so it goes to other 'side'
-% % set(pyramidright,'FaceColor','b')
-% % set(pyramidleft,'FaceColor','b')
-% % hold off
-% % ylabel('Age')
-% % xlabel('Fraction of population')
+figure_c=figure_c+1;
+figure(figure_c)
+hold on
+pyramidright = barh((1:1:Params.J)+Params.agejshifter,Params.mewj/2,'hist'); % I need the divided by two to get the symmetry (half on each 'side')
+pyramidleft = barh((1:1:Params.J)+Params.agejshifter,-Params.mewj/2,'hist'); % 'minus', so it goes to other 'side'
+set(pyramidright,'FaceColor','b')
+set(pyramidleft,'FaceColor','b')
+hold off
+ylabel('Age')
+xlabel('Fraction of population')
 % saveas(figure_c,'./SavedOutput/Graphs/OLGModel3_DemographicPyramid','pdf')
 
 %% General eqm variables
@@ -199,10 +199,10 @@ StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Pol
 AgeConditionalStats=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid);
 
 %% Plot the life cycle profiles of hours worked and effective labour supply in the general eqm.
-% figure_c=figure_c+1;
-% figure(figure_c)
-% subplot(2,1,1); plot(1:1:Params.J,AgeConditionalStats.H.Mean)
-% title('Life Cycle Profile: Hours Worked')
-% subplot(2,1,2); plot(1:1:Params.J,AgeConditionalStats.L.Mean)
-% title('Life Cycle Profile: Labour Supply')
+figure_c=figure_c+1;
+figure(figure_c)
+subplot(2,1,1); plot(1:1:Params.J,AgeConditionalStats.H.Mean)
+title('Life Cycle Profile: Hours Worked')
+subplot(2,1,2); plot(1:1:Params.J,AgeConditionalStats.L.Mean)
+title('Life Cycle Profile: Labour Supply')
 % saveas(figure_c,'./SavedOutput/Graphs/OLGModel3_LifeCycleProfiles','pdf')

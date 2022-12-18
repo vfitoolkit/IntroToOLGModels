@@ -1,8 +1,31 @@
-%% OLG Model 7: Analyzing the OLG Model
-% This is just the exact same thing as OLG Model 6 up until line 252. From
-% then it looks at a variety of model outputs to give you an idea of some
-% of the various commands that exist. It looks at some inequality
-% statistics, and also how to simulate panel data.
+%% OLG Model 9B: Epstein-Zin preferences
+% Modify OLGModel6 to use Epstein-Zin preferences.
+% Epstein-Zin preferences seperate the 'intertemporal elasticity of substitution' from the
+% 'risk aversion' (a single parameter determines both in standard
+% vonNeumann-Morgenstern preferences).
+
+% There are essentially three parts to using Epstein-Zin preferences.
+% 1. Use vfoptions to state that you are using Epstein-Zin preferences.
+% 2. Set the appropriate preference parameters
+% 3. Minor adjustment to 'discount factors' and 'return function'
+
+vfoptions.exoticpreferences='EpsteinZin'; % Use Epstein-Zin preferences
+
+% Esptein-Zin preference parameters
+Params.sigma=2; % Risk aversion
+Params.psi=0.5; % Intertemporal elasticity of substitution
+
+DiscountFactorParamNames={'beta','sj','sigma','psi'}; % The Epstein-Zin parameters must be the last two of the discount factor parameters.
+
+% Have also changed the ReturnFn below. When using Epstein-Zin
+% preferences the risk aversion is done as part of the value function
+% iteration but not as part of the return function itself. This is in
+% contrast to standard preferences when the risk aversion is done as part
+% of the return function. Note that Epstein-Zin preferences with endogenous
+% labor requires us to use a non-seperable utility fn.
+
+% Done! Other than the change to the ReturnFn (and change preference parameter for 
+% change to non-seperable utility), everything else below is unchanged :)
 
 %% Begin setting up to use VFI Toolkit to solve
 % Lets model agents from age 20 to age 100, so 81 periods
@@ -23,9 +46,8 @@ N_j=Params.J; % Number of periods in finite horizon
 % Discount rate
 Params.beta = 0.96;
 % Preferences
-Params.sigma = 2; % Coeff of relative risk aversion (curvature of consumption)
-Params.eta = 1.5; % Curvature of leisure (This will end up being 1/Frisch elasty)
-Params.psi = 10; % Weight on leisure
+Params.chi = 0.3; % Weight on consumption
+% and sigma, psi set above as part of Epstein-Zin preferences
 
 Params.A=1; % Aggregate TFP. Not actually used anywhere.
 % Production function
@@ -132,11 +154,11 @@ h_grid=linspace(0,1,n_d)'; % Notice that it is imposing the 0<=h<=1 condition im
 d_grid=h_grid;
 
 %% Now, create the return function 
-DiscountFactorParamNames={'beta','sj'};
+% DiscountFactorParamNames={'beta','sj'}; % Set above as part of Epstein-Zin preferences
 
-% Notice we use 'OLGModel6_ReturnFn'
-ReturnFn=@(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau)...
-    OLGModel6_ReturnFn(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau);
+% Notice we now use 'OLGModel9B_ReturnFn'. Just is just in the 'utility fn'
+ReturnFn=@(h,aprime,a,z,e,chi,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau)...
+    OLGModel9B_ReturnFn(h,aprime,a,z,e,chi,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau);
 
 %% Now solve the value function iteration problem, just to check that things are working before we go to General Equilbrium
 disp('Test ValueFnIter')
@@ -247,87 +269,6 @@ fprintf('Average labor productivity: Y/H=%8.2f \n', Y/AggVars.H.Mean)
 fprintf('Government-to-Output ratio: G/Y=%8.2f \n', Params.G/Y)
 fprintf('Accidental Bequests as fraction of GDP: %8.2f \n',Params.AccidentBeq/Y)
 fprintf('Wage: w=%8.2f \n',w)
-
-
-%% Look at some further model outputs
-LorenzCurve=EvalFnOnAgentDist_LorenzCurve_FHorz_Case1(StationaryDist,Policy, FnsToEvaluate,Params,[],n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,[],simoptions);
-% Returns a Lorenz Curve 100-by-1 that contains all of the quantiles from 1
-% to 100. Unless the simoptions.npoints is set which case it will be npoints-by-1.
-figure(2)
-subplot(2,1,1); plot(LorenzCurve.K)
-title('Lorenz curve of assets')
-subplot(2,1,2); plot(LorenzCurve.Consumption)
-title('Lorenz curve of consumption')
-% % Once you have a Lorenz curve you can calculate the Gini coefficient using
-Gini=Gini_from_LorenzCurve(LorenzCurve.K); % Here, the Gini for wealth (assets)
-
-% We already calculated aggregates over the agent distribution using
-% EvalFnOnAgentDist_AggVars_FHorz_Case1()
-% Similarly there are a series of related commands to all based around FnsToEvaluate
-
-MeanMedianStdDev=EvalFnOnAgentDist_MeanMedianStdDev_FHorz_Case1(StationaryDist,Policy, FnsToEvaluate,Params,[],n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,[],simoptions);
-% Returns the mean, median and standard deviation
-
-Quantiles=EvalFnOnAgentDist_Quantiles_FHorz_Case1(StationaryDist,Policy, FnsToEvaluate,Params,[],n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,[],simoptions);
-% Returns the cut-off values and the within percentile means from dividing the StationaryDist into simoptions.nquantiles quantiles (so 4 gives quartiles, 5 gives quintiles, 100 gives percentiles).
-% By default simoptions.nquantiles=100, so it is calculating the percentiles.
-% If you look at Quantiles you will see it contains both the quantile cutoffs 
-% and the quantile means.
-
-ValuesOnGrid=EvalFnOnAgentDist_ValuesOnGrid_FHorz_Case1(Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, N_j, d_grid, a_grid, z_grid, [],simoptions);
-% For many calculations it can be helpful to evaluate a function at all the
-% points on the grid. This command does that. Note that the size of, e.g.,
-% ValuesOnGrid.Consumption is n_a-by-n_z-by-n_e-by_N_j.
-
-
-%% Another handy command
-V2=ValueFnFromPolicy_Case1_FHorz(Policy,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, vfoptions);
-% If you wanted to modify the policy function in some way and then
-% calculate the corresponding value function then this command does just
-% that. Because in this example we are just using the Policy as is, we will
-% get output V2 which is just the same as V.
-
-%% Now simulate panel data and run a regression on it.
-
-% First, we want to add a few more FnsToEvaluate so that they are included in our simulated panel data.
-FnsToEvaluate.DisposableIncome = @(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2) OLGModel7_DisposableIncomeFn(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2);
-
-SimPanelValues=SimPanelValues_FHorz_Case1(jequaloneDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,pi_z, simoptions);
-% Simulates a panel based on PolicyIndexes of simoptions.numbersims agents
-% of length simoptions.simperiods beginning from randomly drawn InitialDist
-% which is here inputted as jequaloneDist.
-% By default simoptions.numbersims=10^3, and in finite-horizon simoptions.simperiods=N_j.
-
-% We now look at measuring consumption insurance against earnings shocks.
-% Note that our panel contains all the variables in FnsToEvaluate.
-
-% We will calculate the amount of consumption insurance following Blundell,
-% Pistaferri & Preston (2008) [actually our measure is 1-BPP measure, it ranges from 0 to 1, with 1 being full insurance of consumption against shocks to income]
-% Note: BPP measure is intended for a combination of persistent and
-% transitory shocks, which our model has with both z and e shocks.
-
-% Calculate consumption insurance (two coefficients following BPP2008)
-% Need to use t-2 to t+1: so think of 3 as first period and end-1 as last period for time t
-% Hence 4:end is t+1; 2:end-2 is t-1, and 1:end-3 is t-2
-deltalogct=log(SimPanelValues.Consumption(3:end-1,:))-log(SimPanelValues.Consumption(2:end-2,:)); % log c_t - log c_{t-1}
-deltalogyt=log(SimPanelValues.DisposableIncome(3:end-1,:))-log(SimPanelValues.DisposableIncome(2:end-2,:)); % log y_t - log y_{t-1}
-diff_ytp1_ytm2=log(SimPanelValues.DisposableIncome(4:end,:))-log(SimPanelValues.DisposableIncome(1:end-3,:)); % log y_{t+1} - log y_{t-2}
-delta_ytp1=log(SimPanelValues.DisposableIncome(4:end,:))-log(SimPanelValues.DisposableIncome(3:end-1,:)); % log y_{t+1} - log y_t
-
-covmatrix1=cov(deltalogct,diff_ytp1_ytm2);
-covmatrix2=cov(deltalogyt,diff_ytp1_ytm2);
-covmatrix3=cov(deltalogct,delta_ytp1);
-covmatrix4=cov(deltalogyt,delta_ytp1);
-BPP_coeff1=1-covmatrix1(1,2)/covmatrix2(1,2);
-% 1- Cov(delta log c_t, log y_{t+1} - log y_{t-2})/Cov(delta log y_t, log y_{t+1} - log y_{t-2})
-BPP_coeff2=1-covmatrix3(1,2)/covmatrix4(1,2);
-% 1- Cov(delta log c_t, delta log y_{t+1})/Cov(delta log y_t, delta log y_{t+1})
-% Note that y here is disposable income, c is consumption
-
-fprintf('The degree of consumption insurance against persistent shocks is %8.4f (1-BlundellPistaferriPreston2008 measure) \n',BPP_coeff1)
-fprintf('The degree of consumption insurance against transitory shocks is %8.4f (1-BlundellPistaferriPreston2008 measure) \n',BPP_coeff2)
-
-
 
 
 

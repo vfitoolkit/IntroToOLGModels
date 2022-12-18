@@ -176,14 +176,14 @@ AgeConditionalStats=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEva
 
 %% Plot the life cycle profiles of capital and labour for the inital and final eqm.
 
-% figure_c=figure_c+1;
-% figure(figure_c)
-% subplot(3,1,1); plot(1:1:Params.J,AgeConditionalStats.H.Mean)
-% title('Life Cycle Profile: Hours Worked')
-% subplot(3,1,2); plot(1:1:Params.J,AgeConditionalStats.L.Mean)
-% title('Life Cycle Profile: Labour Supply')
-% subplot(3,1,3); plot(1:1:Params.J,AgeConditionalStats.K.Mean)
-% title('Life Cycle Profile: Assets')
+figure_c=figure_c+1;
+figure(figure_c)
+subplot(3,1,1); plot(1:1:Params.J,AgeConditionalStats.H.Mean)
+title('Life Cycle Profile: Hours Worked')
+subplot(3,1,2); plot(1:1:Params.J,AgeConditionalStats.L.Mean)
+title('Life Cycle Profile: Labour Supply')
+subplot(3,1,3); plot(1:1:Params.J,AgeConditionalStats.K.Mean)
+title('Life Cycle Profile: Assets')
 % saveas(figure_c,'./SavedOutput/Graphs/OLGModel5_LifeCycleProfiles','pdf')
 
 %% Calculate some aggregates and print findings about them

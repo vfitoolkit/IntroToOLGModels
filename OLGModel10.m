@@ -1,8 +1,34 @@
-%% OLG Model 7: Analyzing the OLG Model
-% This is just the exact same thing as OLG Model 6 up until line 252. From
-% then it looks at a variety of model outputs to give you an idea of some
-% of the various commands that exist. It looks at some inequality
-% statistics, and also how to simulate panel data.
+%% OLG Model 10: Permanent Types 1, Fixed effect
+% Add a fixed effect to idiosyncratic productivity, which we call gamma_i
+% Modelled as a more general "permanent type" (how VFI Toolkit solves fixed
+% effects and much more, as seen in later examples).
+%
+% Main change to codes is now we need to call _PType version of all the
+% codes, which also changes exactly what form the output comes in.
+%
+% We use N_i to set the number of permanent types
+% If we enter a parameter as size N_i-by-1 it will automatically be treated
+% as depending on i and handled appropriately (would be the same for
+% N_j-by-N-i, for a parameter depending on age, and differing by permanent type)
+%
+% We also need to define the distribution across the permanent types (a
+% parameter, and we put the name of it in PTypeDistParamNames). We call
+% this gamma_dist.
+% 
+% Run times will be roughly linear in the number of permanent types. By
+% default so is memory use, but can reduce it using vfoptions and simoptions.
+%
+% Model statistics, like AggVars and Life-cycle profiles are automatically
+% calculated both for the aggregate/average economy, and also for each individual 
+% permanent type (technically, the statistics are conditional on the permanent type).
+% This is demonstrated in the life-cycle profile plots that show both the
+% mean for the whole population, and the (conditional) mean for each of the agent types.
+%
+% All the objects like value function, agent distribution, and model
+% statistics are organised according to the 'name' of the permanent type.
+% When we just use N_i types, these are automatically given the names
+% ptype001, ptype002, etc. (Later examples show how to specify names if you want to set them yourself)
+
 
 %% Begin setting up to use VFI Toolkit to solve
 % Lets model agents from age 20 to age 100, so 81 periods
@@ -17,6 +43,7 @@ n_a=301; % Endogenous asset holdings
 n_z=15; % AR(1) with age-dependent params
 vfoptions.n_e=3; % iid
 N_j=Params.J; % Number of periods in finite horizon
+N_i=3; % Number of permanent types (number of values of fixed effect)
 
 %% Parameters
 
@@ -37,6 +64,9 @@ Params.agej=1:1:Params.J; % Is a vector of all the agej: 1,2,3,...,J
 Params.Jr=46;
 % Population growth rate
 Params.n=0.02; % percentage rate (expressed as fraction) at which population growths
+
+% Fixed effect
+Params.gamma_i=[-0.5,0,0.5];
 
 % Age-dependent labor productivity units
 Params.kappa_j=[linspace(0.5,2,Params.Jr-15),linspace(2,1,14),zeros(1,Params.J-Params.Jr+1)];
@@ -83,7 +113,7 @@ Params.tau = 0.15; % Tax rate on labour income
 % The progressive income tax takes the functional form:
 % IncomeTax=eta1+eta2*log(Income)*Income; % This functional form is empirically a decent fit for the US tax system
 % And is determined by the two parameters
-Params.eta1=0.09; % eta1 will be determined in equilibrium to balance gov budget constraint
+% Params.eta1=0.09; % eta1 will be determined in equilibrium to balance gov budget constraint
 Params.eta2=0.053;
 
 % Government spending
@@ -93,8 +123,8 @@ Params.GdivYtarget = 0.15; % Government spending as a fraction of GDP (this is e
 Params.pension=0.4; % Initial guess (this will be determined in general eqm)
 Params.r=0.1;
 Params.AccidentBeq=0.03; % Accidental bequests (this is the lump sum transfer)
-Params.G=0.2; % Government expenditure
-% Params.eta1=0.09; % already set above
+Params.G=0.12; % Government expenditure
+Params.eta1=0.09; % tax rate (part of progressive tax)
 
 %% Grids
 a_grid=10*(linspace(0,1,n_a).^3)'; % The ^3 means most points are near zero, which is where the derivative of the value fn changes most.
@@ -131,18 +161,21 @@ h_grid=linspace(0,1,n_d)'; % Notice that it is imposing the 0<=h<=1 condition im
 % Switch into toolkit notation
 d_grid=h_grid;
 
+% Distribution of the agents across the permanent types (must sum to 1)
+Params.gamma_dist=[0.2,0.5,0.3];
+PTypeDistParamNames={'gamma_dist'};
+
 %% Now, create the return function 
 DiscountFactorParamNames={'beta','sj'};
 
-% Notice we use 'OLGModel6_ReturnFn'
-ReturnFn=@(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau)...
-    OLGModel6_ReturnFn(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau);
+% Notice we use 'OLGModel10_ReturnFn'
+ReturnFn=@(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,gamma_i,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau) OLGModel10_ReturnFn(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,gamma_i,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau)
 
 %% Now solve the value function iteration problem, just to check that things are working before we go to General Equilbrium
 disp('Test ValueFnIter')
 tic;
 % Note: z_grid and pi_z, this will be ignored due to presence of vfoptions.z_grid_J and vfoptions.pi_z_J
-[V, Policy]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+[V, Policy]=ValueFnIter_Case1_FHorz_PType(n_d,n_a,n_z,N_j,N_i, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, vfoptions);
 toc
 
 %% Initial distribution of agents at birth (j=1)
@@ -168,7 +201,7 @@ AgeWeightsParamNames={'mewj'}; % So VFI Toolkit knows which parameter is the mas
 
 %% Test
 disp('Test StationaryDist')
-StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy,n_d,n_a,n_z,N_j,pi_z,Params,simoptions);
+StationaryDist=StationaryDist_Case1_FHorz_PType(jequaloneDist,AgeWeightsParamNames,PTypeDistParamNames,Policy,n_d,n_a,n_z,N_j,N_i,pi_z,Params,simoptions);
 
 %% General eqm variables
 GEPriceParamNames={'r','pension','AccidentBeq','G','eta1'};
@@ -182,7 +215,7 @@ FnsToEvaluate.L = @(h,aprime,a,z,e,kappa_j) kappa_j*exp(z+e)*h;  % Aggregate lab
 FnsToEvaluate.K = @(h,aprime,a,z,e) a;% Aggregate  physical capital
 FnsToEvaluate.PensionSpending = @(h,aprime,a,z,e,pension,agej,Jr) (agej>=Jr)*pension; % Total spending on pensions
 FnsToEvaluate.AccidentalBeqLeft = @(h,aprime,a,z,e,sj) aprime*(1-sj); % Accidental bequests left by people who die
-FnsToEvaluate.IncomeTaxRevenue = @(h,aprime,a,z,e,eta1,eta2,kappa_j,r,delta,alpha,A) OLGModel6_ProgressiveIncomeTaxFn(h,aprime,a,z,e,eta1,eta2,kappa_j,r,delta,alpha,A); % Revenue raised by the progressive income tax (needed own function to avoid log(0) causing problems)
+FnsToEvaluate.IncomeTaxRevenue = @(h,aprime,a,z,e,eta1,eta2,kappa_j,r,delta,alpha,A,gamma_i,agej,Jr) OLGModel10_ProgressiveIncomeTaxFn(h,aprime,a,z,e,eta1,eta2,kappa_j,r,delta,alpha,A,gamma_i,agej,Jr); % Revenue raised by the progressive income tax (needed own function to avoid log(0) causing problems)
 
 % General Equilibrium conditions (these should evaluate to zero in general equilbrium)
 GeneralEqmEqns.capitalmarket = @(r,K,L,alpha,delta,A) r-alpha*A*(K^(alpha-1))*(L^(1-alpha)); % interest rate equals marginal product of capital net of depreciation
@@ -195,11 +228,11 @@ GeneralEqmEqns.govbudget = @(G,IncomeTaxRevenue) G-IncomeTaxRevenue; % Governmen
 %% Test
 % Note: Because we used simoptions we must include this as an input
 disp('Test AggVars')
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid,[],simoptions);
+AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j,N_i, d_grid, a_grid, z_grid,simoptions);
 
 %% Solve for the General Equilibrium
 heteroagentoptions.verbose=1;
-p_eqm=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
+p_eqm=HeteroAgentStationaryEqm_Case1_FHorz_PType(n_d, n_a, n_z, N_j, N_i, [], pi_z, d_grid, a_grid, z_grid,jequaloneDist, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, AgeWeightsParamNames, PTypeDistParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 % p_eqm contains the general equilibrium parameter values
 % Put this into Params so we can calculate things about the initial equilibrium
 Params.r=p_eqm.r;
@@ -209,28 +242,40 @@ Params.G=p_eqm.G;
 Params.eta1=p_eqm.eta1;
 
 % Calculate a few things related to the general equilibrium.
-[V, Policy]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
-StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy,n_d,n_a,n_z,N_j,pi_z,Params,simoptions);
+[V, Policy]=ValueFnIter_Case1_FHorz_PType(n_d,n_a,n_z,N_j, N_i, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, vfoptions);
+StationaryDist=StationaryDist_Case1_FHorz_PType(jequaloneDist,AgeWeightsParamNames,PTypeDistParamNames,Policy,n_d,n_a,n_z,N_j,N_i,pi_z,Params,simoptions);
 % Can just use the same FnsToEvaluate as before.
-AgeConditionalStats=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,simoptions);
+AgeConditionalStats=LifeCycleProfiles_FHorz_Case1_PType(StationaryDist,Policy,FnsToEvaluate,Params,n_d,n_a,n_z,N_j,N_i,d_grid,a_grid,z_grid,simoptions);
 
 %% Plot the life cycle profiles of capital and labour for the inital and final eqm.
+% Note that there is the mean, and also those for each agent type
+% VFI Toolkit automatically gives them names ptype001, ptype002, etc.
 
 figure(1)
 subplot(3,1,1); plot(1:1:Params.J,AgeConditionalStats.H.Mean)
+hold on
+subplot(3,1,1); plot(1:1:Params.J,AgeConditionalStats.H.ptype001.Mean,1:1:Params.J,AgeConditionalStats.H.ptype002.Mean,1:1:Params.J,AgeConditionalStats.H.ptype003.Mean)
+hold off
 title('Life Cycle Profile: Hours Worked')
+legend('Average','ptype001','ptype002','ptype003')
 subplot(3,1,2); plot(1:1:Params.J,AgeConditionalStats.L.Mean)
+hold on
+subplot(3,1,2); plot(1:1:Params.J,AgeConditionalStats.L.ptype001.Mean,1:1:Params.J,AgeConditionalStats.L.ptype002.Mean,1:1:Params.J,AgeConditionalStats.L.ptype003.Mean)
+hold off
 title('Life Cycle Profile: Labour Supply')
 subplot(3,1,3); plot(1:1:Params.J,AgeConditionalStats.K.Mean)
+hold on
+subplot(3,1,3); plot(1:1:Params.J,AgeConditionalStats.K.ptype001.Mean,1:1:Params.J,AgeConditionalStats.K.ptype002.Mean,1:1:Params.J,AgeConditionalStats.K.ptype003.Mean)
+hold off
 title('Life Cycle Profile: Assets')
-% saveas(figure_c,'./SavedOutput/Graphs/OLGModel6_LifeCycleProfiles','pdf')
+saveas(figure_c,'./SavedOutput/Graphs/OLGModel6_LifeCycleProfiles','pdf')
 
 %% Calculate some aggregates and print findings about them
 
 % Add consumption to the FnsToEvaluate
-FnsToEvaluate.Consumption=@(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq) OLGModel6_ConsumptionFn(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq);
+FnsToEvaluate.Consumption=@(h,aprime,a,z,e,agej,Jr,r,gamma_i,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq) OLGModel10_ConsumptionFn(h,aprime,a,z,e,agej,Jr,r,gamma_i,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq);
 
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid,[],simoptions);
+AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j, N_i, d_grid, a_grid, z_grid,simoptions);
 
 % GDP
 Y=Params.A*(AggVars.K.Mean^Params.alpha)*(AggVars.L.Mean^(1-Params.alpha));
@@ -247,87 +292,6 @@ fprintf('Average labor productivity: Y/H=%8.2f \n', Y/AggVars.H.Mean)
 fprintf('Government-to-Output ratio: G/Y=%8.2f \n', Params.G/Y)
 fprintf('Accidental Bequests as fraction of GDP: %8.2f \n',Params.AccidentBeq/Y)
 fprintf('Wage: w=%8.2f \n',w)
-
-
-%% Look at some further model outputs
-LorenzCurve=EvalFnOnAgentDist_LorenzCurve_FHorz_Case1(StationaryDist,Policy, FnsToEvaluate,Params,[],n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,[],simoptions);
-% Returns a Lorenz Curve 100-by-1 that contains all of the quantiles from 1
-% to 100. Unless the simoptions.npoints is set which case it will be npoints-by-1.
-figure(2)
-subplot(2,1,1); plot(LorenzCurve.K)
-title('Lorenz curve of assets')
-subplot(2,1,2); plot(LorenzCurve.Consumption)
-title('Lorenz curve of consumption')
-% % Once you have a Lorenz curve you can calculate the Gini coefficient using
-Gini=Gini_from_LorenzCurve(LorenzCurve.K); % Here, the Gini for wealth (assets)
-
-% We already calculated aggregates over the agent distribution using
-% EvalFnOnAgentDist_AggVars_FHorz_Case1()
-% Similarly there are a series of related commands to all based around FnsToEvaluate
-
-MeanMedianStdDev=EvalFnOnAgentDist_MeanMedianStdDev_FHorz_Case1(StationaryDist,Policy, FnsToEvaluate,Params,[],n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,[],simoptions);
-% Returns the mean, median and standard deviation
-
-Quantiles=EvalFnOnAgentDist_Quantiles_FHorz_Case1(StationaryDist,Policy, FnsToEvaluate,Params,[],n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,[],simoptions);
-% Returns the cut-off values and the within percentile means from dividing the StationaryDist into simoptions.nquantiles quantiles (so 4 gives quartiles, 5 gives quintiles, 100 gives percentiles).
-% By default simoptions.nquantiles=100, so it is calculating the percentiles.
-% If you look at Quantiles you will see it contains both the quantile cutoffs 
-% and the quantile means.
-
-ValuesOnGrid=EvalFnOnAgentDist_ValuesOnGrid_FHorz_Case1(Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, N_j, d_grid, a_grid, z_grid, [],simoptions);
-% For many calculations it can be helpful to evaluate a function at all the
-% points on the grid. This command does that. Note that the size of, e.g.,
-% ValuesOnGrid.Consumption is n_a-by-n_z-by-n_e-by_N_j.
-
-
-%% Another handy command
-V2=ValueFnFromPolicy_Case1_FHorz(Policy,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, vfoptions);
-% If you wanted to modify the policy function in some way and then
-% calculate the corresponding value function then this command does just
-% that. Because in this example we are just using the Policy as is, we will
-% get output V2 which is just the same as V.
-
-%% Now simulate panel data and run a regression on it.
-
-% First, we want to add a few more FnsToEvaluate so that they are included in our simulated panel data.
-FnsToEvaluate.DisposableIncome = @(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2) OLGModel7_DisposableIncomeFn(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2);
-
-SimPanelValues=SimPanelValues_FHorz_Case1(jequaloneDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,pi_z, simoptions);
-% Simulates a panel based on PolicyIndexes of simoptions.numbersims agents
-% of length simoptions.simperiods beginning from randomly drawn InitialDist
-% which is here inputted as jequaloneDist.
-% By default simoptions.numbersims=10^3, and in finite-horizon simoptions.simperiods=N_j.
-
-% We now look at measuring consumption insurance against earnings shocks.
-% Note that our panel contains all the variables in FnsToEvaluate.
-
-% We will calculate the amount of consumption insurance following Blundell,
-% Pistaferri & Preston (2008) [actually our measure is 1-BPP measure, it ranges from 0 to 1, with 1 being full insurance of consumption against shocks to income]
-% Note: BPP measure is intended for a combination of persistent and
-% transitory shocks, which our model has with both z and e shocks.
-
-% Calculate consumption insurance (two coefficients following BPP2008)
-% Need to use t-2 to t+1: so think of 3 as first period and end-1 as last period for time t
-% Hence 4:end is t+1; 2:end-2 is t-1, and 1:end-3 is t-2
-deltalogct=log(SimPanelValues.Consumption(3:end-1,:))-log(SimPanelValues.Consumption(2:end-2,:)); % log c_t - log c_{t-1}
-deltalogyt=log(SimPanelValues.DisposableIncome(3:end-1,:))-log(SimPanelValues.DisposableIncome(2:end-2,:)); % log y_t - log y_{t-1}
-diff_ytp1_ytm2=log(SimPanelValues.DisposableIncome(4:end,:))-log(SimPanelValues.DisposableIncome(1:end-3,:)); % log y_{t+1} - log y_{t-2}
-delta_ytp1=log(SimPanelValues.DisposableIncome(4:end,:))-log(SimPanelValues.DisposableIncome(3:end-1,:)); % log y_{t+1} - log y_t
-
-covmatrix1=cov(deltalogct,diff_ytp1_ytm2);
-covmatrix2=cov(deltalogyt,diff_ytp1_ytm2);
-covmatrix3=cov(deltalogct,delta_ytp1);
-covmatrix4=cov(deltalogyt,delta_ytp1);
-BPP_coeff1=1-covmatrix1(1,2)/covmatrix2(1,2);
-% 1- Cov(delta log c_t, log y_{t+1} - log y_{t-2})/Cov(delta log y_t, log y_{t+1} - log y_{t-2})
-BPP_coeff2=1-covmatrix3(1,2)/covmatrix4(1,2);
-% 1- Cov(delta log c_t, delta log y_{t+1})/Cov(delta log y_t, delta log y_{t+1})
-% Note that y here is disposable income, c is consumption
-
-fprintf('The degree of consumption insurance against persistent shocks is %8.4f (1-BlundellPistaferriPreston2008 measure) \n',BPP_coeff1)
-fprintf('The degree of consumption insurance against transitory shocks is %8.4f (1-BlundellPistaferriPreston2008 measure) \n',BPP_coeff2)
-
-
 
 
 
