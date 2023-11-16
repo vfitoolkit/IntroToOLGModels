@@ -111,21 +111,12 @@ a_grid=10*(linspace(0,1,n_a).^3)'; % The ^3 means most points are near zero, whi
 % Because e is iid we actually just use
 pi_e_J=shiftdim(pi_e_J(1,:,:),1);
 
-% To use exogenous shocks that depend on age you have to add them to vfoptions and simoptions
-vfoptions.z_grid_J=z_grid_J; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-vfoptions.pi_z_J=pi_z_J; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-simoptions.z_grid_J=z_grid_J; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-simoptions.pi_z_J=pi_z_J; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-% You then just pass a 'placeholder' for z_grid and pi_z, and the commands
-% will ignore these and will only use what is in vfoptions/simoptions
-z_grid=z_grid_J(:,1); % Not actually used
-pi_z=pi_z_J(:,:,1); % Not actually used
-% Similarly any (iid) e variable always has to go into vfoptions and simoptions
-vfoptions.e_grid_J=e_grid_J;
-vfoptions.pi_e_J=pi_e_J;
+% Any (iid) e variable always has to go into vfoptions and simoptions
+vfoptions.e_grid=e_grid_J;
+vfoptions.pi_e=pi_e_J;
 simoptions.n_e=vfoptions.n_e;
-simoptions.e_grid_J=e_grid_J;
-simoptions.pi_e_J=pi_e_J;
+simoptions.e_grid=e_grid_J;
+simoptions.pi_e=pi_e_J;
 
 
 % Grid for labour choice
@@ -143,8 +134,7 @@ ReturnFn=@(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_
 %% Now solve the value function iteration problem, just to check that things are working before we go to General Equilbrium
 disp('Test ValueFnIter')
 tic;
-% Note: z_grid and pi_z, this will be ignored due to presence of vfoptions.z_grid_J and vfoptions.pi_z_J
-[V, Policy]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+[V, Policy]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid_J, pi_z_J, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
 toc
 
 %% Initial distribution of agents at birth (j=1)
@@ -170,7 +160,7 @@ AgeWeightsParamNames={'mewj'}; % So VFI Toolkit knows which parameter is the mas
 
 %% Test
 disp('Test StationaryDist')
-StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy,n_d,n_a,n_z,N_j,pi_z,Params,simoptions);
+StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy,n_d,n_a,n_z,N_j,pi_z_J,Params,simoptions);
 
 %% General eqm variables
 GEPriceParamNames={'r','pension','AccidentBeq','G','eta1'};
@@ -197,11 +187,11 @@ GeneralEqmEqns.govbudget = @(G,IncomeTaxRevenue) G-IncomeTaxRevenue; % Governmen
 %% Test
 % Note: Because we used simoptions we must include this as an input
 disp('Test AggVars')
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid,[],simoptions);
+AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid_J,[],simoptions);
 
 %% Solve for the General Equilibrium
 heteroagentoptions.verbose=1;
-p_eqm=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
+p_eqm=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, 0, pi_z_J, d_grid, a_grid, z_grid_J, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
 % p_eqm contains the general equilibrium parameter values
 % Put this into Params so we can calculate things about the initial equilibrium
 Params.r=p_eqm.r;
@@ -211,10 +201,10 @@ Params.G=p_eqm.G;
 Params.eta1=p_eqm.eta1;
 
 % Calculate a few things related to the general equilibrium.
-[V, Policy]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
-StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy,n_d,n_a,n_z,N_j,pi_z,Params,simoptions);
+[V, Policy]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid_J, pi_z_J, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy,n_d,n_a,n_z,N_j,pi_z_J,Params,simoptions);
 % Can just use the same FnsToEvaluate as before.
-AgeConditionalStats=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,simoptions);
+AgeConditionalStats=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid_J,simoptions);
 
 %% Plot the life cycle profiles of capital and labour for the inital and final eqm.
 
@@ -232,7 +222,7 @@ title('Life Cycle Profile: Assets')
 % Add consumption to the FnsToEvaluate
 FnsToEvaluate.Consumption=@(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq) OLGModel6_ConsumptionFn(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq);
 
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid,[],simoptions);
+AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid_J,[],simoptions);
 
 % GDP
 Y=Params.A*(AggVars.K.Mean^Params.alpha)*(AggVars.L.Mean^(1-Params.alpha));

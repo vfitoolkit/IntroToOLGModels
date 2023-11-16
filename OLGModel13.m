@@ -174,10 +174,10 @@ pi_e=pi_e(1,:)';  % Because it is iid, the distribution is just the first row (a
 % and simoptions even though they do not depend on age, just because those
 % for the other permanent types do (and we kind of want them all in the
 % same place).
-vfoptions.z_grid.married=z_grid;
-vfoptions.pi_z.married=pi_z;
-simoptions.z_grid.married=z_grid;
-simoptions.pi_z.married=pi_z;
+z_grid.married=z_grid;
+pi_z.married=pi_z;
+z_grid.married=z_grid;
+pi_z.married=pi_z;
 simoptions.n_e.married=vfoptions.n_e.married;
 vfoptions.e_grid.married=e_grid;
 vfoptions.pi_e.married=pi_e;
@@ -199,25 +199,25 @@ pi_e_J.male=shiftdim(pi_e_J.male(1,:,:),1);
 pi_e_J.female=shiftdim(pi_e_J.female(1,:,:),1);
 
 % To use exogenous shocks that depend on age you have to add them to vfoptions and simoptions
-vfoptions.z_grid_J.male=z_grid_J.male; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-vfoptions.pi_z_J.male=pi_z_J.male; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-simoptions.z_grid_J.male=z_grid_J.male; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-simoptions.pi_z_J.male=pi_z_J.male; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-vfoptions.z_grid_J.female=z_grid_J.female; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-vfoptions.pi_z_J.female=pi_z_J.female; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-simoptions.z_grid_J.female=z_grid_J.female; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-simoptions.pi_z_J.female=pi_z_J.female; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
+z_grid.male=z_grid_J.male;
+pi_z.male=pi_z_J.male;
+z_grid.male=z_grid_J.male;
+pi_z.male=pi_z_J.male;
+z_grid.female=z_grid_J.female;
+pi_z.female=pi_z_J.female;
+z_grid.female=z_grid_J.female;
+pi_z.female=pi_z_J.female;
 % Similarly any (iid) e variable always has to go into vfoptions and simoptions
 simoptions.n_e.male=vfoptions.n_e.male;
 simoptions.n_e.female=vfoptions.n_e.female;
-vfoptions.e_grid_J.male=e_grid_J.male;
-vfoptions.pi_e_J.male=pi_e_J.male;
-simoptions.e_grid_J.male=e_grid_J.male;
-simoptions.pi_e_J.male=pi_e_J.male;
-vfoptions.e_grid_J.female=e_grid_J.female;
-vfoptions.pi_e_J.female=pi_e_J.female;
-simoptions.e_grid_J.female=e_grid_J.female;
-simoptions.pi_e_J.female=pi_e_J.female;
+vfoptions.e_grid.male=e_grid_J.male;
+vfoptions.pi_e.male=pi_e_J.male;
+simoptions.e_grid.male=e_grid_J.male;
+simoptions.pi_e.male=pi_e_J.male;
+vfoptions.e_grid.female=e_grid_J.female;
+vfoptions.pi_e.female=pi_e_J.female;
+simoptions.e_grid.female=e_grid_J.female;
+simoptions.pi_e.female=pi_e_J.female;
 
 
 % Grid for labour choice
@@ -235,16 +235,6 @@ d_grid.female=h_grid.female;
 Params.ptype_dist=[0.6,0.2,0.2]; % Note: these are same order as Names_i: married, male, female
 PTypeDistParamNames={'ptype_dist'};
 
-
-% Kind of annoying, but have to put placeholders for z_grid and pi_z (else get errors about input sizes being incorrect)
-z_grid=struct();
-z_grid.married=vfoptions.z_grid.married;
-z_grid.male=vfoptions.z_grid_J.male(:,1);
-z_grid.female=vfoptions.z_grid_J.female(:,1);
-pi_z=struct();
-pi_z.married=vfoptions.pi_z.married;
-pi_z.male=vfoptions.pi_z_J.male(:,:,1);
-pi_z.female=vfoptions.pi_z_J.female(:,:,1);
 
 %% Now, create the return function 
 DiscountFactorParamNames={'beta','sj'};

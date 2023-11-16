@@ -56,12 +56,12 @@ Params.pension=0.3;
 Params.w=1;
 
 %% Grids
-% While there are no 'a' for 'z' in this model, VFI Toolkit requires them 
-% to figure out what is going on. By making them just a single grid point, 
+% While there are no 'a' in this model, VFI Toolkit requires it 
+% to figure out what is going on. By making it just a single grid point, 
 % and then not using them anywhere, we are essentially solving a model without them.
 a_grid=1;
-z_grid=1; % Note: n_z=0 means that z_grid and pi_z will be ignored, but we still need them as inputs to various commands
-pi_z=1;
+z_grid=[]; % Note: n_z=0 means that z_grid and pi_z will be ignored, but we still need them as inputs to various commands
+pi_z=[];
 
 % Grid for labour choice
 h_grid=linspace(0,1,n_d)';

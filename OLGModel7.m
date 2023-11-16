@@ -109,21 +109,12 @@ a_grid=10*(linspace(0,1,n_a).^3)'; % The ^3 means most points are near zero, whi
 % Because e is iid we actually just use
 pi_e_J=shiftdim(pi_e_J(1,:,:),1);
 
-% To use exogenous shocks that depend on age you have to add them to vfoptions and simoptions
-vfoptions.z_grid_J=z_grid_J; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-vfoptions.pi_z_J=pi_z_J; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-simoptions.z_grid_J=z_grid_J; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-simoptions.pi_z_J=pi_z_J; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-% You then just pass a 'placeholder' for z_grid and pi_z, and the commands
-% will ignore these and will only use what is in vfoptions/simoptions
-z_grid=z_grid_J(:,1); % Not actually used
-pi_z=pi_z_J(:,:,1); % Not actually used
 % Similarly any (iid) e variable always has to go into vfoptions and simoptions
-vfoptions.e_grid_J=e_grid_J;
-vfoptions.pi_e_J=pi_e_J;
+vfoptions.e_grid=e_grid_J;
+vfoptions.pi_e=pi_e_J;
 simoptions.n_e=vfoptions.n_e;
-simoptions.e_grid_J=e_grid_J;
-simoptions.pi_e_J=pi_e_J;
+simoptions.e_grid=e_grid_J;
+simoptions.pi_e=pi_e_J;
 
 
 % Grid for labour choice
@@ -141,8 +132,7 @@ ReturnFn=@(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_
 %% Now solve the value function iteration problem, just to check that things are working before we go to General Equilbrium
 disp('Test ValueFnIter')
 tic;
-% Note: z_grid and pi_z, this will be ignored due to presence of vfoptions.z_grid_J and vfoptions.pi_z_J
-[V, Policy]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+[V, Policy]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid_J, pi_z_J, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
 toc
 
 %% Initial distribution of agents at birth (j=1)
@@ -168,7 +158,7 @@ AgeWeightsParamNames={'mewj'}; % So VFI Toolkit knows which parameter is the mas
 
 %% Test
 disp('Test StationaryDist')
-StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy,n_d,n_a,n_z,N_j,pi_z,Params,simoptions);
+StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy,n_d,n_a,n_z,N_j,pi_z_J,Params,simoptions);
 
 %% General eqm variables
 GEPriceParamNames={'r','pension','AccidentBeq','G','eta1'};
@@ -195,11 +185,11 @@ GeneralEqmEqns.govbudget = @(G,IncomeTaxRevenue) G-IncomeTaxRevenue; % Governmen
 %% Test
 % Note: Because we used simoptions we must include this as an input
 disp('Test AggVars')
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid,[],simoptions);
+AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid_J,[],simoptions);
 
 %% Solve for the General Equilibrium
 heteroagentoptions.verbose=1;
-p_eqm=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
+p_eqm=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, 0, pi_z_J, d_grid, a_grid, z_grid_J, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
 % p_eqm contains the general equilibrium parameter values
 % Put this into Params so we can calculate things about the initial equilibrium
 Params.r=p_eqm.r;
@@ -209,10 +199,10 @@ Params.G=p_eqm.G;
 Params.eta1=p_eqm.eta1;
 
 % Calculate a few things related to the general equilibrium.
-[V, Policy]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
-StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy,n_d,n_a,n_z,N_j,pi_z,Params,simoptions);
+[V, Policy]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid_J, pi_z_J, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy,n_d,n_a,n_z,N_j,pi_z_J,Params,simoptions);
 % Can just use the same FnsToEvaluate as before.
-AgeConditionalStats=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,simoptions);
+AgeConditionalStats=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEvaluate,Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid_J,simoptions);
 
 %% Plot the life cycle profiles of capital and labour for the inital and final eqm.
 
@@ -230,7 +220,7 @@ title('Life Cycle Profile: Assets')
 % Add consumption to the FnsToEvaluate
 FnsToEvaluate.Consumption=@(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq) OLGModel6_ConsumptionFn(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq);
 
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid,[],simoptions);
+AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid_J,[],simoptions);
 
 % GDP
 Y=Params.A*(AggVars.K.Mean^Params.alpha)*(AggVars.L.Mean^(1-Params.alpha));
@@ -250,38 +240,41 @@ fprintf('Wage: w=%8.2f \n',w)
 
 
 %% Look at some further model outputs
-LorenzCurve=EvalFnOnAgentDist_LorenzCurve_FHorz_Case1(StationaryDist,Policy, FnsToEvaluate,Params,[],n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,[],simoptions);
-% Returns a Lorenz Curve 100-by-1 that contains all of the quantiles from 1
-% to 100. Unless the simoptions.npoints is set which case it will be npoints-by-1.
+AllStats=EvalFnOnAgentDist_AllStats_FHorz_Case1(StationaryDist,Policy, FnsToEvaluate,Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid_J,simoptions);
+% This calculates the Mean, Median, Variance, Lorenz Curve, Gini
+% coefficient, and the Quantile Cutoffs and Quantile Means
+% By default it uses 100 points for the Lorenz curve (controlled by setting simoptions.npoints)
+% By default is uses 20 quantiles, so ventiles (controlled by setting simoptions.nquantiles)
+
+% Let's take a look at some Lorenz curves
 figure(2)
-subplot(2,1,1); plot(LorenzCurve.K)
+subplot(2,1,1); plot(AllStats.K.LorenzCurve)
 title('Lorenz curve of assets')
-subplot(2,1,2); plot(LorenzCurve.Consumption)
+subplot(2,1,2); plot(AllStats.Consumption.LorenzCurve)
 title('Lorenz curve of consumption')
-% % Once you have a Lorenz curve you can calculate the Gini coefficient using
-Gini=Gini_from_LorenzCurve(LorenzCurve.K); % Here, the Gini for wealth (assets)
+% Based on these Lorenz Curve we also have the Gini coefficient
+AllStats.K.Gini
 
-% We already calculated aggregates over the agent distribution using
-% EvalFnOnAgentDist_AggVars_FHorz_Case1()
-% Similarly there are a series of related commands to all based around FnsToEvaluate
+% We might also be interested in the variance
+AllStats.K.Variance
+% Or the standard deviation (which is of course just the square root of the variance)
+AllStats.K.StdDeviation
 
-MeanMedianStdDev=EvalFnOnAgentDist_MeanMedianStdDev_FHorz_Case1(StationaryDist,Policy, FnsToEvaluate,Params,[],n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,[],simoptions);
-% Returns the mean, median and standard deviation
+% The quantile cutoffs
+AllStats.K.QuantileCutoffs
+% Note that there are 21 cutoffs, the first and last are the min and max,
+% the other 19 are the cutoffs between the ventiles
+% Associated with each of the 20 quantiles is a quantile mean
+AllStats.K.QuantileMeans
 
-Quantiles=EvalFnOnAgentDist_Quantiles_FHorz_Case1(StationaryDist,Policy, FnsToEvaluate,Params,[],n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,[],simoptions);
-% Returns the cut-off values and the within percentile means from dividing the StationaryDist into simoptions.nquantiles quantiles (so 4 gives quartiles, 5 gives quintiles, 100 gives percentiles).
-% By default simoptions.nquantiles=100, so it is calculating the percentiles.
-% If you look at Quantiles you will see it contains both the quantile cutoffs 
-% and the quantile means.
-
-ValuesOnGrid=EvalFnOnAgentDist_ValuesOnGrid_FHorz_Case1(Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z, N_j, d_grid, a_grid, z_grid, [],simoptions);
+ValuesOnGrid=EvalFnOnAgentDist_ValuesOnGrid_FHorz_Case1(Policy, FnsToEvaluate,Params,[],n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid_J,simoptions);
 % For many calculations it can be helpful to evaluate a function at all the
 % points on the grid. This command does that. Note that the size of, e.g.,
 % ValuesOnGrid.Consumption is n_a-by-n_z-by-n_e-by_N_j.
 
 
 %% Another handy command
-V2=ValueFnFromPolicy_Case1_FHorz(Policy,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, vfoptions);
+V2=ValueFnFromPolicy_Case1_FHorz(Policy,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid_J, pi_z_J, ReturnFn, Params, DiscountFactorParamNames, vfoptions);
 % If you wanted to modify the policy function in some way and then
 % calculate the corresponding value function then this command does just
 % that. Because in this example we are just using the Policy as is, we will
@@ -292,7 +285,7 @@ V2=ValueFnFromPolicy_Case1_FHorz(Policy,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid, pi
 % First, we want to add a few more FnsToEvaluate so that they are included in our simulated panel data.
 FnsToEvaluate.DisposableIncome = @(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2) OLGModel7_DisposableIncomeFn(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2);
 
-SimPanelValues=SimPanelValues_FHorz_Case1(jequaloneDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,pi_z, simoptions);
+SimPanelValues=SimPanelValues_FHorz_Case1(jequaloneDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid_J,pi_z_J, simoptions);
 % Simulates a panel based on PolicyIndexes of simoptions.numbersims agents
 % of length simoptions.simperiods beginning from randomly drawn InitialDist
 % which is here inputted as jequaloneDist.

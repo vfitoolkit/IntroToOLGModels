@@ -1,31 +1,53 @@
 %% OLG Model 9B: Epstein-Zin preferences
 % Modify OLGModel6 to use Epstein-Zin preferences.
-% Epstein-Zin preferences seperate the 'intertemporal elasticity of substitution' from the
-% 'risk aversion' (a single parameter determines both in standard
-% vonNeumann-Morgenstern preferences).
+% Epstein-Zin preferences seperate the 'intertemporal elasticity of substitution' from the 'risk aversion' 
+% (a single parameter determines both in standard vonNeumann-Morgenstern preferences).
+% This example uses Epstein-Zin preferences in utility-units (rather than the more traditional
+% consumption-units formulation of EZ prefs)
 
 % There are essentially three parts to using Epstein-Zin preferences.
 % 1. Use vfoptions to state that you are using Epstein-Zin preferences.
 % 2. Set the appropriate preference parameters
-% 3. Minor adjustment to 'discount factors' and 'return function'
+% 3. Be careful about warm-glow of bequests (remove from return function)
 
+% 1. Use vfoptions to state that you are using Epstein-Zin preferences.
 vfoptions.exoticpreferences='EpsteinZin'; % Use Epstein-Zin preferences
+vfoptions.EZpositiveutility=0; % utility function is negative
 
-% Esptein-Zin preference parameters
-Params.sigma=2; % Risk aversion
-Params.psi=0.5; % Intertemporal elasticity of substitution
+% 2. Set the appropriate preference parameters
+vfoptions.EZriskaversion='phi';
+Params.phi=2; % Risk aversion
+% This parameter controls the 'additional risk aversion' relative to vNM risk preferences.
 
-DiscountFactorParamNames={'beta','sj','sigma','psi'}; % The Epstein-Zin parameters must be the last two of the discount factor parameters.
+% 3. Be careful about warm-glow of bequests (remove from return function)
+% To be able to use a warm-glow-of-bequests with Epstein-Zin preferences we have to distingush
+% conditional survival probabilities from the regular discount factor. 
+% So below the discount factor is now just beta, and we add
+vfoptions.survivalprobability='sj';
+% We no longer include warm-glow of bequests in the return fn.
 
-% Have also changed the ReturnFn below. When using Epstein-Zin
-% preferences the risk aversion is done as part of the value function
-% iteration but not as part of the return function itself. This is in
-% contrast to standard preferences when the risk aversion is done as part
-% of the return function. Note that Epstein-Zin preferences with endogenous
-% labor requires us to use a non-seperable utility fn.
+% 4. Warm-glow of bequests
+% Using warm-glow of bequests together with EZ preferences is subtle, so dealing with them has been mostly automated.
+% Need to define two things (if you don't want bequests you simply do not define these)
+vfoptions.WarmGlowBequestsFn=@(aprime,sigma,wg,agej,J) (agej==J)*wg*(aprime^(1-sigma))/(1-sigma); % First input arguement must be aprime, after than can be any parameters
+Params.wg=1; % controls strength of bequest motive
+% Comment: Loosely speaking you want the WarmGlowBequestsFn to output the 'same'
+% thing as the return fn. Our utility function has (c^(1-sigma))/(1-sigma)
+% and hence we set the warmglow to (aprime^(1-sigma))/(1-sigma). We can
+% then control the importance of the warm-glow of bequests by multiplying
+% it by a constant, here called wg. Note that to keep this in line with previous models we
+% also include a term so that the warm-glow of bequests in only non-zero
+% in the final period, hence the (agej==J)
+% Comment: If a parameter in the WarmGlowBequestsFn depends on age, then it is the last period of life
+% from which the parameter value is taken. So be careful. This may mean you want to create
+% an offset version of a parameter to put into the WarmGlowBequestsFn. (E.g., if
+% you die at the end of period 20, then it is the period 20 parameter
+% values that will be used to evaluate WarmGlowBequestsFn; people often 
+% think of the warm-glow as being received in the following period.)
 
-% Done! Other than the change to the ReturnFn (and change preference parameter for 
-% change to non-seperable utility), everything else below is unchanged :)
+% Have also changed the ReturnFn below (just deleting the warm-glow of bequests from it) 
+
+% Done! Everything else below is unchanged :)
 
 %% Begin setting up to use VFI Toolkit to solve
 % Lets model agents from age 20 to age 100, so 81 periods
@@ -46,8 +68,9 @@ N_j=Params.J; % Number of periods in finite horizon
 % Discount rate
 Params.beta = 0.96;
 % Preferences
-Params.chi = 0.3; % Weight on consumption
-% and sigma, psi set above as part of Epstein-Zin preferences
+Params.sigma = 2; % Coeff of relative risk aversion (curvature of consumption)
+Params.eta = 1.5; % Curvature of leisure (This will end up being 1/Frisch elasty)
+Params.psi = 10; % Weight on leisure
 
 Params.A=1; % Aggregate TFP. Not actually used anywhere.
 % Production function
@@ -93,11 +116,6 @@ Params.dj=[0.006879, 0.000463, 0.000307, 0.000220, 0.000184, 0.000172, 0.000160,
 Params.sj=1-Params.dj(21:101); % Conditional survival probabilities
 Params.sj(end)=0; % In the present model the last period (j=J) value of sj is actually irrelevant
 
-% Warm glow of bequest
-Params.warmglow1=0.3; % (relative) importance of bequests
-Params.warmglow2=3; % bliss point of bequests (essentially, the target amount)
-Params.warmglow3=Params.sigma; % By using the same curvature as the utility of consumption it makes it much easier to guess appropraite parameter values for the warm glow
-
 % Taxes
 Params.tau = 0.15; % Tax rate on labour income
 % In addition to payroll tax rate tau, which funds the pension system we will add a progressive 
@@ -131,21 +149,12 @@ a_grid=10*(linspace(0,1,n_a).^3)'; % The ^3 means most points are near zero, whi
 % Because e is iid we actually just use
 pi_e_J=shiftdim(pi_e_J(1,:,:),1);
 
-% To use exogenous shocks that depend on age you have to add them to vfoptions and simoptions
-vfoptions.z_grid_J=z_grid_J; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-vfoptions.pi_z_J=pi_z_J; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-simoptions.z_grid_J=z_grid_J; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-simoptions.pi_z_J=pi_z_J; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-% You then just pass a 'placeholder' for z_grid and pi_z, and the commands
-% will ignore these and will only use what is in vfoptions/simoptions
-z_grid=z_grid_J(:,1); % Not actually used
-pi_z=pi_z_J(:,:,1); % Not actually used
-% Similarly any (iid) e variable always has to go into vfoptions and simoptions
-vfoptions.e_grid_J=e_grid_J;
-vfoptions.pi_e_J=pi_e_J;
+% Any (iid) e variable always has to go into vfoptions and simoptions
+vfoptions.e_grid=e_grid_J;
+vfoptions.pi_e=pi_e_J;
 simoptions.n_e=vfoptions.n_e;
-simoptions.e_grid_J=e_grid_J;
-simoptions.pi_e_J=pi_e_J;
+simoptions.e_grid=e_grid_J;
+simoptions.pi_e=pi_e_J;
 
 
 % Grid for labour choice
@@ -154,17 +163,17 @@ h_grid=linspace(0,1,n_d)'; % Notice that it is imposing the 0<=h<=1 condition im
 d_grid=h_grid;
 
 %% Now, create the return function 
-% DiscountFactorParamNames={'beta','sj'}; % Set above as part of Epstein-Zin preferences
+DiscountFactorParamNames={'beta'}; % Just beta, we are using EZ prefs with a warm-glow of bequests, so we had to treat the conditional survival probabilities specially
 
-% Notice we now use 'OLGModel9B_ReturnFn'. Just is just in the 'utility fn'
-ReturnFn=@(h,aprime,a,z,e,chi,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau)...
-    OLGModel9B_ReturnFn(h,aprime,a,z,e,chi,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau);
+% Note, 'OLGModel9B_ReturnFn' is just a copy of 'OLGModel6_ReturnFn', except that we have to delete the part about warm-glow of bequests as this has to be treated specially when using EZ. 
+% EZ preferences add more risk aversion to this.
+ReturnFn=@(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,pension,r,A,delta,alpha,kappa_j,AccidentBeq, eta1,eta2,tau)...
+    OLGModel9B_ReturnFn(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,pension,r,A,delta,alpha,kappa_j,AccidentBeq, eta1,eta2,tau);
 
 %% Now solve the value function iteration problem, just to check that things are working before we go to General Equilbrium
 disp('Test ValueFnIter')
 tic;
-% Note: z_grid and pi_z, this will be ignored due to presence of vfoptions.z_grid_J and vfoptions.pi_z_J
-[V, Policy]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+[V, Policy]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid_J, pi_z_J, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
 toc
 
 %% Initial distribution of agents at birth (j=1)
@@ -190,7 +199,7 @@ AgeWeightsParamNames={'mewj'}; % So VFI Toolkit knows which parameter is the mas
 
 %% Test
 disp('Test StationaryDist')
-StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy,n_d,n_a,n_z,N_j,pi_z,Params,simoptions);
+StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy,n_d,n_a,n_z,N_j,pi_z_J,Params,simoptions);
 
 %% General eqm variables
 GEPriceParamNames={'r','pension','AccidentBeq','G','eta1'};
@@ -217,11 +226,11 @@ GeneralEqmEqns.govbudget = @(G,IncomeTaxRevenue) G-IncomeTaxRevenue; % Governmen
 %% Test
 % Note: Because we used simoptions we must include this as an input
 disp('Test AggVars')
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid,[],simoptions);
+AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid_J,[],simoptions);
 
 %% Solve for the General Equilibrium
 heteroagentoptions.verbose=1;
-p_eqm=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, 0, pi_z, d_grid, a_grid, z_grid, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
+p_eqm=HeteroAgentStationaryEqm_Case1_FHorz(jequaloneDist,AgeWeightsParamNames,n_d, n_a, n_z, N_j, 0, pi_z_J, d_grid, a_grid, z_grid_J, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, [], [], [], GEPriceParamNames, heteroagentoptions, simoptions, vfoptions);
 % p_eqm contains the general equilibrium parameter values
 % Put this into Params so we can calculate things about the initial equilibrium
 Params.r=p_eqm.r;
@@ -231,10 +240,10 @@ Params.G=p_eqm.G;
 Params.eta1=p_eqm.eta1;
 
 % Calculate a few things related to the general equilibrium.
-[V, Policy]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
-StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy,n_d,n_a,n_z,N_j,pi_z,Params,simoptions);
+[V, Policy]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid_J, pi_z_J, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
+StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Policy,n_d,n_a,n_z,N_j,pi_z_J,Params,simoptions);
 % Can just use the same FnsToEvaluate as before.
-AgeConditionalStats=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid,simoptions);
+AgeConditionalStats=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEvaluate,Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid_J,simoptions);
 
 %% Plot the life cycle profiles of capital and labour for the inital and final eqm.
 
@@ -252,7 +261,7 @@ title('Life Cycle Profile: Assets')
 % Add consumption to the FnsToEvaluate
 FnsToEvaluate.Consumption=@(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq) OLGModel6_ConsumptionFn(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq);
 
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid,[],simoptions);
+AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid_J,[],simoptions);
 
 % GDP
 Y=Params.A*(AggVars.K.Mean^Params.alpha)*(AggVars.L.Mean^(1-Params.alpha));

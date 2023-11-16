@@ -142,16 +142,11 @@ a_grid.household=10*(linspace(0,1,n_a.household).^3)'; % The ^3 means most point
 % Because e is iid we actually just use
 pi_e_J=shiftdim(pi_e_J(1,:,:),1);
 
-% To use exogenous shocks that depend on age you have to add them to vfoptions and simoptions
-vfoptions.z_grid_J.household=z_grid_J; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-vfoptions.pi_z_J.household=pi_z_J; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-simoptions.z_grid_J.household=z_grid_J; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-simoptions.pi_z_J.household=pi_z_J; % Note: naming of vfoptions.z_grid_J has to be exactly as is.
-% You then just pass a 'placeholder' for z_grid and pi_z, and the commands
-% will ignore these and will only use what is in vfoptions/simoptions
-z_grid.household=z_grid_J(:,1); % Not actually used
-pi_z.household=pi_z_J(:,:,1); % Not actually used
-% Similarly any (iid) e variable always has to go into vfoptions and simoptions
+% z_grid and pi_z for household
+z_grid.household=z_grid_J;
+pi_z.household=pi_z_J;
+
+% Any (iid) e variable always has to go into vfoptions and simoptions
 vfoptions.e_grid_J.household=e_grid_J;
 vfoptions.pi_e_J.household=pi_e_J;
 simoptions.n_e.household=vfoptions.n_e.household;
