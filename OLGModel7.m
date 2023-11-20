@@ -240,7 +240,7 @@ fprintf('Wage: w=%8.2f \n',w)
 
 
 %% Look at some further model outputs
-AllStats=EvalFnOnAgentDist_AllStats_FHorz_Case1(StationaryDist,Policy, FnsToEvaluate,Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid_J,simoptions);
+AllStats=EvalFnOnAgentDist_AllStats_FHorz_Case1(StationaryDist,Policy, FnsToEvaluate,Params,[],n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid_J,simoptions);
 % This calculates the Mean, Median, Variance, Lorenz Curve, Gini
 % coefficient, and the Quantile Cutoffs and Quantile Means
 % By default it uses 100 points for the Lorenz curve (controlled by setting simoptions.npoints)
