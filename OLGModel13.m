@@ -174,10 +174,10 @@ pi_e=pi_e(1,:)';  % Because it is iid, the distribution is just the first row (a
 % and simoptions even though they do not depend on age, just because those
 % for the other permanent types do (and we kind of want them all in the
 % same place).
-z_grid.married=z_grid;
-pi_z.married=pi_z;
-z_grid.married=z_grid;
-pi_z.married=pi_z;
+vfoptions.z_grid.married=z_grid;
+vfoptions.pi_z.married=pi_z;
+simoptions.z_grid.married=z_grid;
+simoptions.pi_z.married=pi_z;
 simoptions.n_e.married=vfoptions.n_e.married;
 vfoptions.e_grid.married=e_grid;
 vfoptions.pi_e.married=pi_e;
@@ -199,14 +199,14 @@ pi_e_J.male=shiftdim(pi_e_J.male(1,:,:),1);
 pi_e_J.female=shiftdim(pi_e_J.female(1,:,:),1);
 
 % To use exogenous shocks that depend on age you have to add them to vfoptions and simoptions
-z_grid.male=z_grid_J.male;
-pi_z.male=pi_z_J.male;
-z_grid.male=z_grid_J.male;
-pi_z.male=pi_z_J.male;
-z_grid.female=z_grid_J.female;
-pi_z.female=pi_z_J.female;
-z_grid.female=z_grid_J.female;
-pi_z.female=pi_z_J.female;
+vfoptions.z_grid.male=z_grid_J.male;
+vfoptions.pi_z.male=pi_z_J.male;
+simoptions.z_grid.male=z_grid_J.male;
+simoptions.pi_z.male=pi_z_J.male;
+vfoptions.z_grid.female=z_grid_J.female;
+vfoptions.pi_z.female=pi_z_J.female;
+simoptions.z_grid.female=z_grid_J.female;
+simoptions.pi_z.female=pi_z_J.female;
 % Similarly any (iid) e variable always has to go into vfoptions and simoptions
 simoptions.n_e.male=vfoptions.n_e.male;
 simoptions.n_e.female=vfoptions.n_e.female;
@@ -253,7 +253,7 @@ ReturnFn.female=@(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,gamma_i,pension,r,A,del
 disp('Test ValueFnIter')
 tic;
 % Note: z_grid and pi_z, this will be ignored due to presence of vfoptions.z_grid_J and vfoptions.pi_z_J
-[V, Policy]=ValueFnIter_Case1_FHorz_PType(n_d,n_a,n_z,N_j,Names_i, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, vfoptions);
+[V, Policy]=ValueFnIter_Case1_FHorz_PType(n_d,n_a,n_z,N_j,Names_i, d_grid, a_grid, vfoptions.z_grid, vfoptions.pi_z, ReturnFn, Params, DiscountFactorParamNames, vfoptions);
 toc
 
 %% Initial distribution of agents at birth (j=1)
@@ -283,7 +283,7 @@ AgeWeightsParamNames={'mewj'}; % So VFI Toolkit knows which parameter is the mas
 
 %% Test
 disp('Test StationaryDist')
-StationaryDist=StationaryDist_Case1_FHorz_PType(jequaloneDist,AgeWeightsParamNames,PTypeDistParamNames,Policy,n_d,n_a,n_z,N_j,Names_i,pi_z,Params,simoptions);
+StationaryDist=StationaryDist_Case1_FHorz_PType(jequaloneDist,AgeWeightsParamNames,PTypeDistParamNames,Policy,n_d,n_a,n_z,N_j,Names_i,simoptions.pi_z,Params,simoptions);
 
 %% General eqm variables
 GEPriceParamNames={'r','pension','AccidentBeq','G','eta1'};
@@ -327,11 +327,11 @@ GeneralEqmEqns.govbudget = @(G,IncomeTaxRevenue) G-IncomeTaxRevenue; % Governmen
 %% Test
 % Note: Because we used simoptions we must include this as an input
 disp('Test AggVars')
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j,Names_i, d_grid, a_grid, z_grid,simoptions);
+AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j,Names_i, d_grid, a_grid, simoptions.z_grid,simoptions);
 
 %% Solve for the General Equilibrium
 heteroagentoptions.verbose=1;
-p_eqm=HeteroAgentStationaryEqm_Case1_FHorz_PType(n_d, n_a, n_z, N_j, Names_i, [], pi_z, d_grid, a_grid, z_grid,jequaloneDist, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, AgeWeightsParamNames, PTypeDistParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+p_eqm=HeteroAgentStationaryEqm_Case1_FHorz_PType(n_d, n_a, n_z, N_j, Names_i, [], simoptions.pi_z, d_grid, a_grid, simoptions.z_grid,jequaloneDist, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, AgeWeightsParamNames, PTypeDistParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 % p_eqm contains the general equilibrium parameter values
 % Put this into Params so we can calculate things about the initial equilibrium
 Params.r=p_eqm.r;
@@ -346,10 +346,10 @@ FnsToEvaluate.H2.married = @(h1,h2,aprime,a,z1,z2,e1,e2) h2;  % hours worked of 
 % Notice that it is possible to have FnsToEvaluate that are only for some permanent types but not for others.
 
 % Calculate a few things related to the general equilibrium.
-[V, Policy]=ValueFnIter_Case1_FHorz_PType(n_d,n_a,n_z,N_j, Names_i, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, vfoptions);
-StationaryDist=StationaryDist_Case1_FHorz_PType(jequaloneDist,AgeWeightsParamNames,PTypeDistParamNames,Policy,n_d,n_a,n_z,N_j,Names_i,pi_z,Params,simoptions);
+[V, Policy]=ValueFnIter_Case1_FHorz_PType(n_d,n_a,n_z,N_j, Names_i, d_grid, a_grid, vfoptions.z_grid, vfoptions.pi_z, ReturnFn, Params, DiscountFactorParamNames, vfoptions);
+StationaryDist=StationaryDist_Case1_FHorz_PType(jequaloneDist,AgeWeightsParamNames,PTypeDistParamNames,Policy,n_d,n_a,n_z,N_j,Names_i,simoptions.pi_z,Params,simoptions);
 % Can just use the same FnsToEvaluate as before.
-AgeConditionalStats=LifeCycleProfiles_FHorz_Case1_PType(StationaryDist,Policy,FnsToEvaluate,Params,n_d,n_a,n_z,N_j,Names_i,d_grid,a_grid,z_grid,simoptions);
+AgeConditionalStats=LifeCycleProfiles_FHorz_Case1_PType(StationaryDist,Policy,FnsToEvaluate,Params,n_d,n_a,n_z,N_j,Names_i,d_grid,a_grid,simoptions.z_grid,simoptions);
 
 
 %% Plot the life cycle profiles of capital and labour for the inital and final eqm.
@@ -372,7 +372,7 @@ FnsToEvaluate.Consumption.married=@(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,pension,r
 FnsToEvaluate.Consumption.male=@(h,aprime,a,z,e,agej,Jr,r,gamma_i,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq) OLGModel10_ConsumptionFn(h,aprime,a,z,e,agej,Jr,r,gamma_i,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq);
 FnsToEvaluate.Consumption.female=@(h,aprime,a,z,e,agej,Jr,r,gamma_i,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq) OLGModel10_ConsumptionFn(h,aprime,a,z,e,agej,Jr,r,gamma_i,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq);
 
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j, Names_i, d_grid, a_grid, z_grid, simoptions);
+AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j, Names_i, d_grid, a_grid, simoptions.z_grid, simoptions);
 
 % GDP
 Y=Params.A*(AggVars.K.Mean^Params.alpha)*(AggVars.L.Mean^(1-Params.alpha));
