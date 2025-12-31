@@ -45,6 +45,8 @@ vfoptions.n_e=3; % iid
 N_j=Params.J; % Number of periods in finite horizon
 N_i=3; % Number of permanent types (number of values of fixed effect)
 
+figure_c=0; % I like to use a counter for the figures. Makes it easier to keep track of them when editing.
+
 %% Parameters
 
 % Discount rate
@@ -258,7 +260,7 @@ hold on
 subplot(3,1,3); plot(1:1:Params.J,AgeConditionalStats.K.ptype001.Mean,1:1:Params.J,AgeConditionalStats.K.ptype002.Mean,1:1:Params.J,AgeConditionalStats.K.ptype003.Mean)
 hold off
 title('Life Cycle Profile: Assets')
-saveas(figure_c,'./SavedOutput/Graphs/OLGModel6_LifeCycleProfiles','pdf')
+% saveas(figure_c,'./SavedOutput/Graphs/OLGModel6_LifeCycleProfiles','pdf')
 
 %% Calculate some aggregates and print findings about them
 
