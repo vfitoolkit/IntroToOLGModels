@@ -285,7 +285,7 @@ V2=ValueFnFromPolicy_Case1_FHorz(Policy,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid_J, 
 % First, we want to add a few more FnsToEvaluate so that they are included in our simulated panel data.
 FnsToEvaluate.DisposableIncome = @(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2) OLGModel7_DisposableIncomeFn(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2);
 
-SimPanelValues=SimPanelValues_FHorz_Case1(jequaloneDist,Policy,FnsToEvaluate,[],Params,n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid_J,pi_z_J, simoptions);
+SimPanelValues=SimPanelValues_FHorz_Case1(jequaloneDist,Policy,FnsToEvaluate,Params,[],n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid_J,pi_z_J, simoptions);
 % Simulates a panel based on PolicyIndexes of simoptions.numbersims agents
 % of length simoptions.simperiods beginning from randomly drawn InitialDist
 % which is here inputted as jequaloneDist.
