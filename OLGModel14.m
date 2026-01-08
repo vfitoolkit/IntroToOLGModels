@@ -147,11 +147,11 @@ z_grid.household=z_grid_J;
 pi_z.household=pi_z_J;
 
 % Any (iid) e variable always has to go into vfoptions and simoptions
-vfoptions.e_grid_J.household=e_grid_J;
-vfoptions.pi_e_J.household=pi_e_J;
+vfoptions.e_grid.household=e_grid_J;
+vfoptions.pi_e.household=pi_e_J;
 simoptions.n_e.household=vfoptions.n_e.household;
-simoptions.e_grid_J.household=e_grid_J;
-simoptions.pi_e_J.household=pi_e_J;
+simoptions.e_grid.household=e_grid_J;
+simoptions.pi_e.household=pi_e_J;
 
 
 %% Grids for firm
