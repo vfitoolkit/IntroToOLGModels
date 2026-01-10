@@ -4,8 +4,8 @@ KdivL=((r+delta)/(alpha*A))^(1/(alpha-1));
 w=A*(1-alpha)*(KdivL^alpha); % wage rate (per effective labour unit)
 
 % Progressive income tax
-if agej<Jr
-    Income=w*kappa_j1*exp(z1*e1)*h1+w*kappa_j2*exp(z2+e2)*h2+r*a; % Income is labor income and capital income
+if agej<Jr % Income is labor income and capital income
+    Income=w*kappa_j1*exp(z1*e1)*h1+w*kappa_j2*exp(z2+e2)*h2+r*a;
 else
     Income=r*a;
 end

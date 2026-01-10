@@ -1,8 +1,9 @@
 %% OLG Model 7: Analyzing the OLG Model
-% This is just the exact same thing as OLG Model 6 up until line 252. From
+% This is just the exact same thing as OLG Model 6 up until line 244. From
 % then it looks at a variety of model outputs to give you an idea of some
 % of the various commands that exist. It looks at some inequality
 % statistics, and also how to simulate panel data.
+
 
 %% Begin setting up to use VFI Toolkit to solve
 % Lets model agents from age 20 to age 100, so 81 periods
@@ -78,6 +79,7 @@ Params.warmglow3=Params.sigma; % By using the same curvature as the utility of c
 
 % Taxes
 Params.tau = 0.15; % Tax rate on labour income
+Params.tau_final=0.1; % We will look at transition path resulting from reduction in tax rate to this level
 % In addition to payroll tax rate tau, which funds the pension system we will add a progressive 
 % income tax which funds government spending.
 % The progressive income tax takes the functional form:
