@@ -5,8 +5,8 @@ KdivL=((r+delta)/(alpha*A))^(1/(alpha-1));
 w=A*(1-alpha)*(KdivL^alpha); % wage rate (per effective labour unit)
 
 % Progressive income tax
-if agej<Jr
-    Income=w*kappa_j*exp(gamma_i+z+e)*h+r*a; % Income is labor income and capital income
+if agej<Jr % Income is labor income and capital income
+    Income=w*kappa_j*exp(gamma_i+z+e)*h+r*a;
 else
     Income=r*a;
 end
@@ -16,11 +16,10 @@ if Income>0
 end
 % Note: Have made pensions exempt from income tax.
 
-if agej<Jr % If working age
-    c=(1+r)*a+(1-tau)*w*kappa_j*exp(gamma_i+z+e)*h-IncomeTax+(1+r)*AccidentBeq-aprime; % Use (z1+z2)
+if agej<Jr % If working age use gamma_i, z, and e
+    c=(1+r)*a+(1-tau)*w*kappa_j*exp(gamma_i+z+e)*h-IncomeTax+(1+r)*AccidentBeq-aprime;
 else % Retirement
     c=(1+r)*a+pension+(1+r)*AccidentBeq-aprime;
 end
-
 
 end

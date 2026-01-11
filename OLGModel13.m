@@ -174,15 +174,11 @@ pi_e=pi_e(1,:)';  % Because it is iid, the distribution is just the first row (a
 % and simoptions even though they do not depend on age, just because those
 % for the other permanent types do (and we kind of want them all in the
 % same place).
-vfoptions.z_grid.married=z_grid;
-vfoptions.pi_z.married=pi_z;
-simoptions.z_grid.married=z_grid;
-simoptions.pi_z.married=pi_z;
+vfoptions.z_grid.married=z_grid; simoptions.z_grid.married=z_grid;
+vfoptions.pi_z.married=pi_z; simoptions.pi_z.married=pi_z;
 simoptions.n_e.married=vfoptions.n_e.married;
-vfoptions.e_grid.married=e_grid;
-vfoptions.pi_e.married=pi_e;
-simoptions.e_grid.married=e_grid;
-simoptions.pi_e.married=pi_e;
+vfoptions.e_grid.married=e_grid; simoptions.e_grid.married=e_grid;
+vfoptions.pi_e.married=pi_e; simoptions.pi_e.married=pi_e;
 
 % Exogenous shocks for single male and single female
 % First, z, the AR(1) with age-dependent parameters
@@ -199,25 +195,17 @@ pi_e_J.male=shiftdim(pi_e_J.male(1,:,:),1);
 pi_e_J.female=shiftdim(pi_e_J.female(1,:,:),1);
 
 % To use exogenous shocks that depend on age you have to add them to vfoptions and simoptions
-vfoptions.z_grid.male=z_grid_J.male;
-vfoptions.pi_z.male=pi_z_J.male;
-simoptions.z_grid.male=z_grid_J.male;
-simoptions.pi_z.male=pi_z_J.male;
-vfoptions.z_grid.female=z_grid_J.female;
-vfoptions.pi_z.female=pi_z_J.female;
-simoptions.z_grid.female=z_grid_J.female;
-simoptions.pi_z.female=pi_z_J.female;
+vfoptions.z_grid.male=z_grid_J.male; simoptions.z_grid.male=z_grid_J.male;
+vfoptions.pi_z.male=pi_z_J.male; simoptions.pi_z.male=pi_z_J.male;
+vfoptions.z_grid.female=z_grid_J.female; simoptions.z_grid.female=z_grid_J.female;
+vfoptions.pi_z.female=pi_z_J.female; simoptions.pi_z.female=pi_z_J.female;
 % Similarly any (iid) e variable always has to go into vfoptions and simoptions
 simoptions.n_e.male=vfoptions.n_e.male;
 simoptions.n_e.female=vfoptions.n_e.female;
-vfoptions.e_grid.male=e_grid_J.male;
-vfoptions.pi_e.male=pi_e_J.male;
-simoptions.e_grid.male=e_grid_J.male;
-simoptions.pi_e.male=pi_e_J.male;
-vfoptions.e_grid.female=e_grid_J.female;
-vfoptions.pi_e.female=pi_e_J.female;
-simoptions.e_grid.female=e_grid_J.female;
-simoptions.pi_e.female=pi_e_J.female;
+vfoptions.e_grid.male=e_grid_J.male; simoptions.e_grid.male=e_grid_J.male;
+vfoptions.pi_e.male=pi_e_J.male; simoptions.pi_e.male=pi_e_J.male;
+vfoptions.e_grid.female=e_grid_J.female; simoptions.e_grid.female=e_grid_J.female;
+vfoptions.pi_e.female=pi_e_J.female; simoptions.pi_e.female=pi_e_J.female;
 
 
 % Grid for labour choice
@@ -260,11 +248,11 @@ toc
 % Before we plot the life-cycle profiles we have to define how agents are
 % at age j=1. We will give them all zero assets.
 jequaloneDist.married=zeros([n_a,n_z.married,vfoptions.n_e.married],'gpuArray'); % Put no households anywhere on grid
-jequaloneDist.married(1,floor((n_z.married(1)+1)/2),floor((n_z.married(2)+1)/2),floor((simoptions.n_e.married(1)+1)/2),floor((simoptions.n_e.married(2)+1)/2))=1; % All agents start with zero assets, and the median shock
+jequaloneDist.married(1,round(n_z.married(1)/2),round(n_z.married(2)/2),round(simoptions.n_e.married(1)/2),round(simoptions.n_e.married(2)/2))=1; % All agents start with zero assets, and the median shock
 jequaloneDist.male=zeros([n_a,n_z.male,vfoptions.n_e.male],'gpuArray'); % Put no households anywhere on grid
-jequaloneDist.male(1,floor((n_z.male+1)/2),floor((simoptions.n_e.male+1)/2))=1; % All agents start with zero assets, and the median shock
+jequaloneDist.male(1,round(n_z.male/2),round(simoptions.n_e.male/2))=1; % All agents start with zero assets, and the median shock
 jequaloneDist.female=zeros([n_a,n_z.female,vfoptions.n_e.female],'gpuArray'); % Put no households anywhere on grid
-jequaloneDist.female(1,floor((n_z.female+1)/2),floor((simoptions.n_e.female+1)/2))=1; % All agents start with zero assets, and the median shock
+jequaloneDist.female(1,round(n_z.female/2),round(simoptions.n_e.female/2))=1; % All agents start with zero assets, and the median shock
 
 %% Agents age distribution
 % Many OLG models include some kind of population growth, and perhaps
@@ -389,6 +377,3 @@ fprintf('Average labor productivity: Y/H=%8.2f \n', Y/AggVars.H.Mean)
 fprintf('Government-to-Output ratio: G/Y=%8.2f \n', Params.G/Y)
 fprintf('Accidental Bequests as fraction of GDP: %8.2f \n',Params.AccidentBeq/Y)
 fprintf('Wage: w=%8.2f \n',w)
-
-
-
