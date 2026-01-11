@@ -170,15 +170,17 @@ a_grid=10*(linspace(0,1,n_a).^3)'; % The ^3 means most points are near zero, whi
 [e_grid, pi_e]=discretizeVAR1_FarmerToda(zeros(2,1),zeros(2,2),Params.sigma_epsilon_e_married,vfoptions.n_e.married);
 pi_e=pi_e(1,:)';  % Because it is iid, the distribution is just the first row (all rows are identical). We use pi_e as a column vector for VFI Toolkit to handle iid variables.
 
-% We will put exogenous shocks for the married couple into the vfoptions
-% and simoptions even though they do not depend on age, just because those
-% for the other permanent types do (and we kind of want them all in the
-% same place).
-vfoptions.z_grid.married=z_grid; simoptions.z_grid.married=z_grid;
-vfoptions.pi_z.married=pi_z; simoptions.pi_z.married=pi_z;
+% We will put exogenous shocks for the married couple into the vfoptions and simoptions even though they do not depend on age, just because those
+% for the other permanent types do (and we kind of want them all in the same place).
+vfoptions.z_grid.married=z_grid;
+simoptions.z_grid.married=z_grid;
+vfoptions.pi_z.married=pi_z;
+simoptions.pi_z.married=pi_z;
 simoptions.n_e.married=vfoptions.n_e.married;
-vfoptions.e_grid.married=e_grid; simoptions.e_grid.married=e_grid;
-vfoptions.pi_e.married=pi_e; simoptions.pi_e.married=pi_e;
+vfoptions.e_grid.married=e_grid;
+simoptions.e_grid.married=e_grid;
+vfoptions.pi_e.married=pi_e;
+simoptions.pi_e.married=pi_e;
 
 % Exogenous shocks for single male and single female
 % First, z, the AR(1) with age-dependent parameters
