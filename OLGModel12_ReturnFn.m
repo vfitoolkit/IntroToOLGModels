@@ -9,8 +9,8 @@ KdivL=((r+delta)/(alpha*A))^(1/(alpha-1));
 w=A*(1-alpha)*(KdivL^alpha); % wage rate (per effective labour unit)
 
 % Progressive income tax
-if agej<Jr
-    Income=w*kappa_j1*exp(z1*e1)*h1+w*kappa_j2*exp(z2+e2)*h2+r*a; % Income is labor income and capital income
+if agej<Jr % Income is labor income and capital income
+    Income=w*kappa_j1*exp(z1*e1)*h1+w*kappa_j2*exp(z2+e2)*h2+r*a;
 else
     Income=r*a;
 end
@@ -22,14 +22,14 @@ end
 
 
 F=-Inf;
-if agej<Jr % If working age
-    c=(1+r)*a+(1-tau)*(w*kappa_j1*exp(z1+e1)*h1+w*kappa_j2*exp(z2+e2)*h2)-IncomeTax+(1+r)*AccidentBeq-aprime; % Use (z1+z2)
+if agej<Jr % If working age use (z1+z2)
+    c=(1+r)*a+(1-tau)*(w*kappa_j1*exp(z1+e1)*h1+w*kappa_j2*exp(z2+e2)*h2)-IncomeTax+(1+r)*AccidentBeq-aprime;
 else % Retirement
     c=(1+r)*a+pension+(1+r)*AccidentBeq-aprime;
 end
 
-if c>0
-    F=(c^(1-sigma))/(1-sigma) -psi*(h1^(1+eta))/(1+eta)-psi*(h2^(1+eta))/(1+eta); % The utility function
+if c>0 % The utility function
+    F=(c^(1-sigma))/(1-sigma) -psi*(h1^(1+eta))/(1+eta)-psi*(h2^(1+eta))/(1+eta);
 end
 
 % Warm-glow bequest

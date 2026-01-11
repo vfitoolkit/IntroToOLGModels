@@ -240,5 +240,3 @@ fprintf('Government-to-Output ratio: G/Y=%8.2f \n', Params.G/Y)
 fprintf('Accidental Bequests as fraction of GDP: %8.2f \n',Params.AccidentBeq/Y)
 fprintf('Wage: w=%8.2f \n',w)
 
-
-

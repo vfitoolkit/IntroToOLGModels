@@ -1,12 +1,16 @@
 function F=OLGModel10_ReturnFn(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,gamma_i,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau)
-% Add fixed effect gamma_i to idiosyncratic labor productivity (compared to OLGModel6_ReturnFn)
+% Add fixed effect gamma_i to idiosyncratic labor productivity (vs OLGModel6_ReturnFn)
+
+
+
+
 
 KdivL=((r+delta)/(alpha*A))^(1/(alpha-1));
 w=A*(1-alpha)*(KdivL^alpha); % wage rate (per effective labour unit)
 
 % Progressive income tax
-if agej<Jr
-    Income=w*kappa_j*exp(gamma_i+z+e)*h+r*a; % Income is labor income and capital income
+if agej<Jr % Income is labor income and capital income
+    Income=w*kappa_j*exp(gamma_i+z+e)*h+r*a;
 else
     Income=r*a;
 end
@@ -18,14 +22,14 @@ end
 
 
 F=-Inf;
-if agej<Jr % If working age
-    c=(1+r)*a+(1-tau)*w*kappa_j*exp(gamma_i+z+e)*h-IncomeTax+(1+r)*AccidentBeq-aprime; % Use (z1+z2)
+if agej<Jr % If working age use gamma_i, z, and e
+    c=(1+r)*a+(1-tau)*w*kappa_j*exp(gamma_i+z+e)*h-IncomeTax+(1+r)*AccidentBeq-aprime;
 else % Retirement
     c=(1+r)*a+pension+(1+r)*AccidentBeq-aprime;
 end
 
-if c>0
-    F=(c^(1-sigma))/(1-sigma) -psi*(h^(1+eta))/(1+eta); % The utility function
+if c>0 % The utility function
+    F=(c^(1-sigma))/(1-sigma) -psi*(h^(1+eta))/(1+eta);
 end
 
 % Warm-glow bequest
