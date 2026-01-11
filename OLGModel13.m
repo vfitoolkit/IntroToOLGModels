@@ -197,17 +197,25 @@ pi_e_J.male=shiftdim(pi_e_J.male(1,:,:),1);
 pi_e_J.female=shiftdim(pi_e_J.female(1,:,:),1);
 
 % To use exogenous shocks that depend on age you have to add them to vfoptions and simoptions
-vfoptions.z_grid.male=z_grid_J.male; simoptions.z_grid.male=z_grid_J.male;
-vfoptions.pi_z.male=pi_z_J.male; simoptions.pi_z.male=pi_z_J.male;
-vfoptions.z_grid.female=z_grid_J.female; simoptions.z_grid.female=z_grid_J.female;
-vfoptions.pi_z.female=pi_z_J.female; simoptions.pi_z.female=pi_z_J.female;
+vfoptions.z_grid.male=z_grid_J.male;
+vfoptions.pi_z.male=pi_z_J.male;
+simoptions.z_grid.male=z_grid_J.male;
+simoptions.pi_z.male=pi_z_J.male;
+vfoptions.z_grid.female=z_grid_J.female;
+vfoptions.pi_z.female=pi_z_J.female;
+simoptions.z_grid.female=z_grid_J.female;
+simoptions.pi_z.female=pi_z_J.female;
 % Similarly any (iid) e variable always has to go into vfoptions and simoptions
 simoptions.n_e.male=vfoptions.n_e.male;
 simoptions.n_e.female=vfoptions.n_e.female;
-vfoptions.e_grid.male=e_grid_J.male; simoptions.e_grid.male=e_grid_J.male;
-vfoptions.pi_e.male=pi_e_J.male; simoptions.pi_e.male=pi_e_J.male;
-vfoptions.e_grid.female=e_grid_J.female; simoptions.e_grid.female=e_grid_J.female;
-vfoptions.pi_e.female=pi_e_J.female; simoptions.pi_e.female=pi_e_J.female;
+vfoptions.e_grid.male=e_grid_J.male;
+vfoptions.pi_e.male=pi_e_J.male;
+simoptions.e_grid.male=e_grid_J.male;
+simoptions.pi_e.male=pi_e_J.male;
+vfoptions.e_grid.female=e_grid_J.female;
+vfoptions.pi_e.female=pi_e_J.female;
+simoptions.e_grid.female=e_grid_J.female;
+simoptions.pi_e.female=pi_e_J.female;
 
 
 % Grid for labour choice

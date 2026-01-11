@@ -192,11 +192,7 @@ jequaloneDist.household(1,floor((n_z.household+1)/2),floor((simoptions.n_e.house
 % Note that because the firms are infinite horizon they do not have an age=1 distribution
 
 %% Agents age distribution
-% Many OLG models include some kind of population growth, and perhaps
-% some other things that create a weighting of different ages that needs to
-% be used to calculate the stationary distribution and aggregate variable.
-% Many OLG models include some kind of population growth, and perhaps
-% some other things that create a weighting of different ages that needs to
+% Many OLG models include some kind of population growth, and perhaps some other things that create a weighting of different ages that needs to
 % be used to calculate the stationary distribution and aggregate variable.
 Params.mewj=ones(1,Params.J); % Marginal distribution of households over age
 for jj=2:length(Params.mewj)
