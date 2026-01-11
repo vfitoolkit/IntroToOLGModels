@@ -24,7 +24,6 @@ vfoptions.n_e=[3,3]; % iid
 N_j=Params.J; % Number of periods in finite horizon
 
 vfoptions.lowmemory=1; % The married household problem is larger, so loop over e
-simoptions.parallel=3; % Reduce gpu memory requirements (by using sparse cpu matrix instead of gpu matrix; by default it would be parallel=2)
 
 %% Parameters
 
