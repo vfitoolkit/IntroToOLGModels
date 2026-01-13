@@ -96,8 +96,8 @@ Params.sigma_epsilon_z_married=sqrt(Params.sigmasq_epsilon_z_married);
 % iid processes on idiosyncratic labor units which are correlated
 Params.sigmasq_epsilon_e_married=[0.1,0.05;0.05,0.1];
 Params.sigma_epsilon_e_married=sqrt(Params.sigmasq_epsilon_e_married);
-Params.gamma1=0.1; % Fixed-effect
-Params.gamma2=-0.1; % Fixed-effect
+Params.gamma_1=0.1; % Fixed-effect
+Params.gamma_2=-0.1; % Fixed-effect
 
 % Single Female and Single Male labor productivity process
 % Age-dependent labor productivity units
@@ -237,13 +237,13 @@ PTypeDistParamNames={'ptype_dist'};
 DiscountFactorParamNames={'beta','sj'};
 
 % Notice we use 'OLGModel12_ReturnFn' for married couple
-ReturnFn.married=@(h1,h2,aprime,a,z1,z2,e1,e2,sigma,psi,eta,agej,Jr,J,pension,r,kappa_j1,kappa_j2,A,alpha,delta,eta1,eta2,warmglow1,warmglow2,AccidentBeq,tau)...
-    OLGModel12_ReturnFn(h1,h2,aprime,a,z1,z2,e1,e2,sigma,psi,eta,agej,Jr,J,pension,r,kappa_j1,kappa_j2,A,alpha,delta,eta1,eta2,warmglow1,warmglow2,AccidentBeq,tau);
+ReturnFn.married=@(h1,h2,aprime,a,z1,z2,e1,e2,sigma,psi,eta,agej,Jr,J,pension,r,kappa_j1,kappa_j2,gamma_1,gamma_2,A,alpha,delta,eta1,eta2,warmglow1,warmglow2,AccidentBeq,tau)...
+    OLGModel12_ReturnFn(h1,h2,aprime,a,z1,z2,e1,e2,sigma,psi,eta,agej,Jr,J,pension,r,kappa_j1,kappa_j2,gamma_1,gamma_2,A,alpha,delta,eta1,eta2,warmglow1,warmglow2,AccidentBeq,tau);
 % And OLGModel10_ReturnFn for the single male and single female
-ReturnFn.male=@(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,gamma_i,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau)...
-    OLGModel10_ReturnFn(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,gamma_i,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau);
-ReturnFn.female=@(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,gamma_i,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau)...
-    OLGModel10_ReturnFn(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,gamma_i,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau);
+ReturnFn.male=@(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,gamma_i,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau)...
+    OLGModel10_ReturnFn(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,gamma_i,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau);
+ReturnFn.female=@(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,gamma_i,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau)...
+    OLGModel10_ReturnFn(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,gamma_i,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau);
 
 
 %% Now solve the value function iteration problem, just to check that things are working before we go to General Equilbrium
@@ -296,21 +296,24 @@ FnsToEvaluate.L.married = @(h1,h2,aprime,a,z1,z2,e1,e2,kappa_j1,kappa_j2) kappa_
 FnsToEvaluate.K.married = @(h1,h2,aprime,a,z1,z2,e1,e2) a;% Aggregate  physical capital
 FnsToEvaluate.PensionSpending.married = @(h1,h2,aprime,a,z1,z2,e1,e2,pension,agej,Jr) (agej>=Jr)*pension; % Total spending on pensions
 FnsToEvaluate.AccidentalBeqLeft.married = @(h1,h2,aprime,a,z1,z2,e1,e2,sj) aprime*(1-sj); % Accidental bequests left by people who die
-FnsToEvaluate.IncomeTaxRevenue.married = @(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,r,kappa_j1,kappa_j2,A,alpha,delta,eta1,eta2) OLGModel12_ProgressiveIncomeTaxFn(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,r,kappa_j1,kappa_j2,A,alpha,delta,eta1,eta2); % Revenue raised by the progressive income tax (needed own function to avoid log(0) causing problems)
+FnsToEvaluate.IncomeTaxRevenue.married = @(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,r,kappa_j1,kappa_j2,gamma_1,gamma_2,A,alpha,delta,eta1,eta2)...
+    OLGModel12_ProgressiveIncomeTaxFn(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,r,kappa_j1,kappa_j2,gamma_1,gamma_2,A,alpha,delta,eta1,eta2); % Revenue raised by the progressive income tax (needed own function to avoid log(0) causing problems)
 
 FnsToEvaluate.H.male = @(h,aprime,a,z,e) h; % Aggregate labour supply
 FnsToEvaluate.L.male = @(h,aprime,a,z,e,kappa_j) kappa_j*exp(z+e)*h;  % Aggregate labour supply in efficiency units 
 FnsToEvaluate.K.male = @(h,aprime,a,z,e) a;% Aggregate  physical capital
 FnsToEvaluate.PensionSpending.male = @(h,aprime,a,z,e,pension,agej,Jr) (agej>=Jr)*pension; % Total spending on pensions
 FnsToEvaluate.AccidentalBeqLeft.male = @(h,aprime,a,z,e,sj) aprime*(1-sj); % Accidental bequests left by people who die
-FnsToEvaluate.IncomeTaxRevenue.male = @(h,aprime,a,z,e,eta1,eta2,kappa_j,r,delta,alpha,A,gamma_i,agej,Jr) OLGModel10_ProgressiveIncomeTaxFn(h,aprime,a,z,e,eta1,eta2,kappa_j,r,delta,alpha,A,gamma_i,agej,Jr); % Revenue raised by the progressive income tax (needed own function to avoid log(0) causing problems)
+FnsToEvaluate.IncomeTaxRevenue.male = @(h,aprime,a,z,e,eta1,eta2,kappa_j,gamma_i,r,delta,alpha,A,agej,Jr)...
+    OLGModel10_ProgressiveIncomeTaxFn(h,aprime,a,z,e,eta1,eta2,kappa_j,gamma_i,r,delta,alpha,A,agej,Jr); % Revenue raised by the progressive income tax (needed own function to avoid log(0) causing problems)
 
 FnsToEvaluate.H.female = @(h,aprime,a,z,e) h; % Aggregate labour supply
 FnsToEvaluate.L.female = @(h,aprime,a,z,e,kappa_j) kappa_j*exp(z+e)*h;  % Aggregate labour supply in efficiency units 
 FnsToEvaluate.K.female = @(h,aprime,a,z,e) a;% Aggregate  physical capital
 FnsToEvaluate.PensionSpending.female = @(h,aprime,a,z,e,pension,agej,Jr) (agej>=Jr)*pension; % Total spending on pensions
 FnsToEvaluate.AccidentalBeqLeft.female = @(h,aprime,a,z,e,sj) aprime*(1-sj); % Accidental bequests left by people who die
-FnsToEvaluate.IncomeTaxRevenue.female = @(h,aprime,a,z,e,eta1,eta2,kappa_j,r,delta,alpha,A,gamma_i,agej,Jr) OLGModel10_ProgressiveIncomeTaxFn(h,aprime,a,z,e,eta1,eta2,kappa_j,r,delta,alpha,A,gamma_i,agej,Jr); % Revenue raised by the progressive income tax (needed own function to avoid log(0) causing problems)
+FnsToEvaluate.IncomeTaxRevenue.female = @(h,aprime,a,z,e,eta1,eta2,kappa_j,gamma_i,r,delta,alpha,A,agej,Jr)...
+    OLGModel10_ProgressiveIncomeTaxFn(h,aprime,a,z,e,eta1,eta2,kappa_j,gamma_i,r,delta,alpha,A,agej,Jr); % Revenue raised by the progressive income tax (needed own function to avoid log(0) causing problems)
 
 
 % General Equilibrium conditions (these should evaluate to zero in general equilbrium)
@@ -365,9 +368,12 @@ AgeConditionalStats=LifeCycleProfiles_FHorz_Case1_PType(StationaryDist,Policy,Fn
 %% Calculate some aggregates and print findings about them
 
 % Add consumption to the FnsToEvaluate
-FnsToEvaluate.Consumption.married=@(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,pension,r,kappa_j1,kappa_j2,A,alpha,delta,eta1,eta2,tau,AccidentBeq) OLGModel12_ConsumptionFn(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,pension,r,kappa_j1,kappa_j2,A,alpha,delta,eta1,eta2,tau,AccidentBeq);
-FnsToEvaluate.Consumption.male=@(h,aprime,a,z,e,agej,Jr,r,gamma_i,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq) OLGModel10_ConsumptionFn(h,aprime,a,z,e,agej,Jr,r,gamma_i,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq);
-FnsToEvaluate.Consumption.female=@(h,aprime,a,z,e,agej,Jr,r,gamma_i,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq) OLGModel10_ConsumptionFn(h,aprime,a,z,e,agej,Jr,r,gamma_i,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq);
+FnsToEvaluate.Consumption.married=@(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,pension,r,kappa_j1,kappa_j2,gamma_1,gamma_2,A,alpha,delta,eta1,eta2,tau,AccidentBeq)...
+    OLGModel12_ConsumptionFn(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,pension,r,kappa_j1,kappa_j2,gamma_1,gamma_2,A,alpha,delta,eta1,eta2,tau,AccidentBeq);
+FnsToEvaluate.Consumption.male=@(h,aprime,a,z,e,agej,Jr,pension,r,tau,kappa_j,gamma_i,alpha,delta,A,eta1,eta2,AccidentBeq)...
+    OLGModel10_ConsumptionFn(h,aprime,a,z,e,agej,Jr,pension,r,tau,kappa_j,gamma_i,alpha,delta,A,eta1,eta2,AccidentBeq);
+FnsToEvaluate.Consumption.female=@(h,aprime,a,z,e,agej,Jr,pension,r,tau,kappa_j,gamma_i,alpha,delta,A,eta1,eta2,AccidentBeq)...
+    OLGModel10_ConsumptionFn(h,aprime,a,z,e,agej,Jr,pension,r,tau,kappa_j,gamma_i,alpha,delta,A,eta1,eta2,AccidentBeq);
 
 AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j, Names_i, d_grid, a_grid, simoptions.z_grid, simoptions);
 

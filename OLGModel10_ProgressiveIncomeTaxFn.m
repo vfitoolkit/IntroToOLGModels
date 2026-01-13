@@ -1,4 +1,4 @@
-function IncomeTax=OLGModel10_ProgressiveIncomeTaxFn(h,aprime,a,z,e,eta1,eta2,kappa_j,r,delta,alpha,A,gamma_i,agej,Jr)
+function IncomeTax=OLGModel10_ProgressiveIncomeTaxFn(h,aprime,a,z,e,eta1,eta2,kappa_j,gamma_i,r,delta,alpha,A,agej,Jr)
 
 KdivL=((r+delta)/(alpha*A))^(1/(alpha-1));
 w=A*(1-alpha)*(KdivL^alpha); % wage rate (per effective labour unit)

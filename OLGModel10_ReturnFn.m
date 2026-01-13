@@ -1,4 +1,4 @@
-function F=OLGModel10_ReturnFn(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,gamma_i,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau)
+function F=OLGModel10_ReturnFn(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,gamma_i,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau)
 % Add fixed effect gamma_i to idiosyncratic labor productivity (vs OLGModel6_ReturnFn)
 
 

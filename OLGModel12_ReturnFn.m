@@ -1,4 +1,4 @@
-function F=OLGModel12_ReturnFn(h1,h2,aprime,a,z1,z2,e1,e2,sigma,psi,eta,agej,Jr,J,pension,r,kappa_j1,kappa_j2,A,alpha,delta,eta1,eta2,warmglow1,warmglow2,AccidentBeq,tau)
+function F=OLGModel12_ReturnFn(h1,h2,aprime,a,z1,z2,e1,e2,sigma,psi,eta,agej,Jr,J,pension,r,kappa_j1,kappa_j2,gamma_1,gamma_2,A,alpha,delta,eta1,eta2,warmglow1,warmglow2,AccidentBeq,tau)
 % The first seven are the 'always required' decision variables, next period
 % endogenous states, this period endogenous states, exogenous states
 % After that we need all the parameters the return function uses, it
@@ -10,7 +10,7 @@ w=A*(1-alpha)*(KdivL^alpha); % wage rate (per effective labour unit)
 
 % Progressive income tax
 if agej<Jr % Income is labor income and capital income
-    Income=w*kappa_j1*exp(z1*e1)*h1+w*kappa_j2*exp(z2+e2)*h2+r*a;
+    Income=w*kappa_j1*exp(gamma_1+z1+e1)*h1+w*kappa_j2*exp(gamma2+z2+e2)*h2+r*a;
 else
     Income=r*a;
 end
@@ -23,7 +23,7 @@ end
 
 F=-Inf;
 if agej<Jr % If working age use (z1+z2)
-    c=(1+r)*a+(1-tau)*(w*kappa_j1*exp(z1+e1)*h1+w*kappa_j2*exp(z2+e2)*h2)-IncomeTax+(1+r)*AccidentBeq-aprime;
+    c=(1+r)*a+(1-tau)*(w*kappa_j1*exp(gamma_1+z1+e1)*h1+w*kappa_j2*exp(gamma2+z2+e2)*h2)-IncomeTax+(1+r)*AccidentBeq-aprime;
 else % Retirement
     c=(1+r)*a+pension+(1+r)*AccidentBeq-aprime;
 end
