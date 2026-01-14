@@ -93,11 +93,11 @@ Params.eta2=0.053;
 Params.GdivYtarget = 0.15; % Government spending as a fraction of GDP (this is essentially just used as a target to define a general equilibrium condition)
 
 %% Some initial values/guesses for variables that will be determined in general eqm
-Params.r=0.16;
-Params.pension=2; % Initial guess (this will be determined in general eqm)
-Params.AccidentBeq=0.07; % Accidental bequests (this is the lump sum transfer) 
-Params.G=0.5;  % Government expenditure
-Params.eta1=0.51;
+Params.r=0.19;
+Params.pension=2.2; % Initial guess (this will be determined in general eqm)
+Params.AccidentBeq=0.08; % Accidental bequests (this is the lump sum transfer) 
+Params.G=0.58;  % Government expenditure
+Params.eta1=0.29;
 % Params.eta1=0.09; % already set above
 
 %% Grids
