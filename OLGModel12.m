@@ -175,7 +175,8 @@ GEPriceParamNames={'r','pension','AccidentBeq','G','eta1'};
 
 % Stationary Distribution Aggregates (important that ordering of Names and Functions is the same)
 FnsToEvaluate.H = @(h1,h2,aprime,a,z1,z2,e1,e2) h1+h2; % Aggregate 'hours worked'
-FnsToEvaluate.L = @(h1,h2,aprime,a,z1,z2,e1,e2,kappa_j1,kappa_j2) kappa_j1*exp(z1+e1)*h1+kappa_j2*exp(z2+e2)*h2;  % Aggregate labour supply in efficiency units 
+FnsToEvaluate.L = @(h1,h2,aprime,a,z1,z2,e1,e2,kappa_j1,kappa_j2,gamma_1,gamma_2)...
+    kappa_j1*exp(gamma_1+z1+e1)*h1+kappa_j2*exp(gamma_2+z2+e2)*h2;  % Aggregate labour supply in efficiency units 
 FnsToEvaluate.K = @(h1,h2,aprime,a,z1,z2,e1,e2) a;% Aggregate  physical capital
 FnsToEvaluate.PensionSpending = @(h1,h2,aprime,a,z1,z2,e1,e2,pension,agej,Jr) (agej>=Jr)*pension; % Total spending on pensions
 FnsToEvaluate.AccidentalBeqLeft = @(h1,h2,aprime,a,z1,z2,e1,e2,sj) aprime*(1-sj); % Accidental bequests left by people who die

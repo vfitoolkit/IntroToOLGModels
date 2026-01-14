@@ -149,10 +149,10 @@ Params.GdivYtarget = 0.15; % Government spending as a fraction of GDP (this is e
 
 %% Some initial values/guesses for variables that will be determined in general eqm
 Params.r=0.11;
-Params.pension=0.65; % Initial guess (this will be determined in general eqm)
+Params.pension=0.66; % Initial guess (this will be determined in general eqm)
 Params.AccidentBeq=0.04; % Accidental bequests (this is the lump sum transfer) 
-Params.G=0.2; % Government expenditure
-Params.eta1=0.18;
+Params.G=0.19; % Government expenditure
+Params.eta1=0.17;
 
 %% Grids
 a_grid=10*(linspace(0,1,n_a).^3)'; % The ^3 means most points are near zero, which is where the derivative of the value fn changes most.
@@ -292,7 +292,8 @@ GEPriceParamNames={'r','pension','AccidentBeq','G','eta1'};
 
 % Stationary Distribution Aggregates (important that ordering of Names and Functions is the same)
 FnsToEvaluate.H.married = @(h1,h2,aprime,a,z1,z2,e1,e2) h1+h2; % Aggregate 'hours worked'
-FnsToEvaluate.L.married = @(h1,h2,aprime,a,z1,z2,e1,e2,kappa_j1,kappa_j2) kappa_j1*exp(z1+e1)*h1+kappa_j2*exp(z2+e2)*h2;  % Aggregate labour supply in efficiency units 
+FnsToEvaluate.L.married = @(h1,h2,aprime,a,z1,z2,e1,e2,kappa_j1,kappa_j2,gamma_1,gamma_2)...
+    kappa_j1*exp(gamma_1+z1+e1)*h1+kappa_j2*exp(gamma_2+z2+e2)*h2;  % Aggregate labour supply in efficiency units 
 FnsToEvaluate.K.married = @(h1,h2,aprime,a,z1,z2,e1,e2) a;% Aggregate  physical capital
 FnsToEvaluate.PensionSpending.married = @(h1,h2,aprime,a,z1,z2,e1,e2,pension,agej,Jr) (agej>=Jr)*pension; % Total spending on pensions
 FnsToEvaluate.AccidentalBeqLeft.married = @(h1,h2,aprime,a,z1,z2,e1,e2,sj) aprime*(1-sj); % Accidental bequests left by people who die
@@ -300,7 +301,7 @@ FnsToEvaluate.IncomeTaxRevenue.married = @(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,r,
     OLGModel12_ProgressiveIncomeTaxFn(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,r,kappa_j1,kappa_j2,gamma_1,gamma_2,A,alpha,delta,eta1,eta2); % Revenue raised by the progressive income tax (needed own function to avoid log(0) causing problems)
 
 FnsToEvaluate.H.male = @(h,aprime,a,z,e) h; % Aggregate labour supply
-FnsToEvaluate.L.male = @(h,aprime,a,z,e,kappa_j) kappa_j*exp(z+e)*h;  % Aggregate labour supply in efficiency units 
+FnsToEvaluate.L.male = @(h,aprime,a,z,e,kappa_j,gamma_i) kappa_j*exp(gamma_i+z+e)*h;  % Aggregate labour supply in efficiency units 
 FnsToEvaluate.K.male = @(h,aprime,a,z,e) a;% Aggregate  physical capital
 FnsToEvaluate.PensionSpending.male = @(h,aprime,a,z,e,pension,agej,Jr) (agej>=Jr)*pension; % Total spending on pensions
 FnsToEvaluate.AccidentalBeqLeft.male = @(h,aprime,a,z,e,sj) aprime*(1-sj); % Accidental bequests left by people who die
@@ -308,7 +309,7 @@ FnsToEvaluate.IncomeTaxRevenue.male = @(h,aprime,a,z,e,eta1,eta2,kappa_j,gamma_i
     OLGModel10_ProgressiveIncomeTaxFn(h,aprime,a,z,e,eta1,eta2,kappa_j,gamma_i,r,delta,alpha,A,agej,Jr); % Revenue raised by the progressive income tax (needed own function to avoid log(0) causing problems)
 
 FnsToEvaluate.H.female = @(h,aprime,a,z,e) h; % Aggregate labour supply
-FnsToEvaluate.L.female = @(h,aprime,a,z,e,kappa_j) kappa_j*exp(z+e)*h;  % Aggregate labour supply in efficiency units 
+FnsToEvaluate.L.female = @(h,aprime,a,z,e,kappa_j,gamma_i) kappa_j*exp(gamma_i+z+e)*h;  % Aggregate labour supply in efficiency units 
 FnsToEvaluate.K.female = @(h,aprime,a,z,e) a;% Aggregate  physical capital
 FnsToEvaluate.PensionSpending.female = @(h,aprime,a,z,e,pension,agej,Jr) (agej>=Jr)*pension; % Total spending on pensions
 FnsToEvaluate.AccidentalBeqLeft.female = @(h,aprime,a,z,e,sj) aprime*(1-sj); % Accidental bequests left by people who die

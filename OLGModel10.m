@@ -204,11 +204,12 @@ GEPriceParamNames={'r','pension','AccidentBeq','G','eta1'};
 
 % Stationary Distribution Aggregates (important that ordering of Names and Functions is the same)
 FnsToEvaluate.H = @(h,aprime,a,z,e) h; % Aggregate labour supply
-FnsToEvaluate.L = @(h,aprime,a,z,e,kappa_j) kappa_j*exp(z+e)*h;  % Aggregate labour supply in efficiency units 
+FnsToEvaluate.L = @(h,aprime,a,z,e,kappa_j,gamma_i) kappa_j*exp(gamma_i+z+e)*h;  % Aggregate labour supply in efficiency units 
 FnsToEvaluate.K = @(h,aprime,a,z,e) a;% Aggregate  physical capital
 FnsToEvaluate.PensionSpending = @(h,aprime,a,z,e,pension,agej,Jr) (agej>=Jr)*pension; % Total spending on pensions
 FnsToEvaluate.AccidentalBeqLeft = @(h,aprime,a,z,e,sj) aprime*(1-sj); % Accidental bequests left by people who die
-FnsToEvaluate.IncomeTaxRevenue = @(h,aprime,a,z,e,eta1,eta2,kappa_j,gamma_i,r,delta,alpha,A,agej,Jr) OLGModel10_ProgressiveIncomeTaxFn(h,aprime,a,z,e,eta1,eta2,kappa_j,gamma_i,r,delta,alpha,A,agej,Jr); % Revenue raised by the progressive income tax (needed own function to avoid log(0) causing problems)
+FnsToEvaluate.IncomeTaxRevenue = @(h,aprime,a,z,e,eta1,eta2,kappa_j,gamma_i,r,delta,alpha,A,agej,Jr)...
+    OLGModel10_ProgressiveIncomeTaxFn(h,aprime,a,z,e,eta1,eta2,kappa_j,gamma_i,r,delta,alpha,A,agej,Jr); % Revenue raised by the progressive income tax (needed own function to avoid log(0) causing problems)
 
 % General Equilibrium conditions (these should evaluate to zero in general equilbrium)
 GeneralEqmEqns.capitalmarket = @(r,K,L,alpha,delta,A) r-alpha*A*(K^(alpha-1))*(L^(1-alpha)); % interest rate equals marginal product of capital net of depreciation
@@ -266,7 +267,8 @@ title('Life Cycle Profile: Assets')
 %% Calculate some aggregates and print findings about them
 
 % Add consumption to the FnsToEvaluate
-FnsToEvaluate.Consumption=@(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,gamma_i,alpha,delta,A,eta1,eta2,AccidentBeq) OLGModel10_ConsumptionFn(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,gamma_i,alpha,delta,A,eta1,eta2,AccidentBeq);
+FnsToEvaluate.Consumption=@(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,gamma_i,alpha,delta,A,eta1,eta2,AccidentBeq)...
+    OLGModel10_ConsumptionFn(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,gamma_i,alpha,delta,A,eta1,eta2,AccidentBeq);
 
 AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j, N_i, d_grid, a_grid, z_grid_J,simoptions);
 
