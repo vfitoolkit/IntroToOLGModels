@@ -1,4 +1,4 @@
-function c=OLGModel10_ConsumptionFn(h,aprime,a,z,e,agej,Jr,r,gamma_i,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq)
+function c=OLGModel10_ConsumptionFn(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,gamma_i,alpha,delta,A,eta1,eta2,AccidentBeq)
 % Note: these lines are essentially just a copy of the relevant part of the return fn
 
 KdivL=((r+delta)/(alpha*A))^(1/(alpha-1));

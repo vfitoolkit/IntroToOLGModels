@@ -57,6 +57,8 @@ Params.sigma_epsilon_z_married=sqrt(Params.sigmasq_epsilon_z_married);
 % iid processes on idiosyncratic labor units which are correlated
 Params.sigmasq_epsilon_e_married=[0.1,0.05;0.05,0.1];
 Params.sigma_epsilon_e_married=sqrt(Params.sigmasq_epsilon_e_married);
+Params.gamma_1=0.1; % Fixed-effect
+Params.gamma_2=-0.1; % Fixed-effect
 
 % Conditional survival probabilities: sj is the probability of surviving to be age j+1, given alive at age j
 % Most countries have calculations of these (as they are used by the government departments that oversee pensions)
@@ -91,11 +93,11 @@ Params.eta2=0.053;
 Params.GdivYtarget = 0.15; % Government spending as a fraction of GDP (this is essentially just used as a target to define a general equilibrium condition)
 
 %% Some initial values/guesses for variables that will be determined in general eqm
-Params.r=0.16;
-Params.pension=2; % Initial guess (this will be determined in general eqm)
-Params.AccidentBeq=0.07; % Accidental bequests (this is the lump sum transfer) 
-Params.G=0.5;  % Government expenditure
-Params.eta1=0.51;
+Params.r=0.19;
+Params.pension=2.2; % Initial guess (this will be determined in general eqm)
+Params.AccidentBeq=0.08; % Accidental bequests (this is the lump sum transfer) 
+Params.G=0.58;  % Government expenditure
+Params.eta1=0.29;
 % Params.eta1=0.09; % already set above
 
 %% Grids
@@ -130,8 +132,8 @@ d_grid=[h1_grid; h2_grid];
 DiscountFactorParamNames={'beta','sj'};
 
 % Notice we use 'OLGModel12_ReturnFn'
-ReturnFn=@(h1,h2,aprime,a,z1,z2,e1,e2,sigma,psi,eta,agej,Jr,J,pension,r,kappa_j1,kappa_j2,A,alpha,delta,eta1,eta2,warmglow1,warmglow2,AccidentBeq,tau)...
-    OLGModel12_ReturnFn(h1,h2,aprime,a,z1,z2,e1,e2,sigma,psi,eta,agej,Jr,J,pension,r,kappa_j1,kappa_j2,A,alpha,delta,eta1,eta2,warmglow1,warmglow2,AccidentBeq,tau);
+ReturnFn=@(h1,h2,aprime,a,z1,z2,e1,e2,sigma,psi,eta,agej,Jr,J,pension,r,kappa_j1,kappa_j2,gamma_1,gamma_2,A,alpha,delta,eta1,eta2,warmglow1,warmglow2,AccidentBeq,tau)...
+    OLGModel12_ReturnFn(h1,h2,aprime,a,z1,z2,e1,e2,sigma,psi,eta,agej,Jr,J,pension,r,kappa_j1,kappa_j2,gamma_1,gamma_2,A,alpha,delta,eta1,eta2,warmglow1,warmglow2,AccidentBeq,tau);
 
 %% Now solve the value function iteration problem, just to check that things are working before we go to General Equilbrium
 disp('Test ValueFnIter')
@@ -173,11 +175,13 @@ GEPriceParamNames={'r','pension','AccidentBeq','G','eta1'};
 
 % Stationary Distribution Aggregates (important that ordering of Names and Functions is the same)
 FnsToEvaluate.H = @(h1,h2,aprime,a,z1,z2,e1,e2) h1+h2; % Aggregate 'hours worked'
-FnsToEvaluate.L = @(h1,h2,aprime,a,z1,z2,e1,e2,kappa_j1,kappa_j2) kappa_j1*exp(z1+e1)*h1+kappa_j2*exp(z2+e2)*h2;  % Aggregate labour supply in efficiency units 
+FnsToEvaluate.L = @(h1,h2,aprime,a,z1,z2,e1,e2,kappa_j1,kappa_j2,gamma_1,gamma_2)...
+    kappa_j1*exp(gamma_1+z1+e1)*h1+kappa_j2*exp(gamma_2+z2+e2)*h2;  % Aggregate labour supply in efficiency units 
 FnsToEvaluate.K = @(h1,h2,aprime,a,z1,z2,e1,e2) a;% Aggregate  physical capital
 FnsToEvaluate.PensionSpending = @(h1,h2,aprime,a,z1,z2,e1,e2,pension,agej,Jr) (agej>=Jr)*pension; % Total spending on pensions
 FnsToEvaluate.AccidentalBeqLeft = @(h1,h2,aprime,a,z1,z2,e1,e2,sj) aprime*(1-sj); % Accidental bequests left by people who die
-FnsToEvaluate.IncomeTaxRevenue = @(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,r,kappa_j1,kappa_j2,A,alpha,delta,eta1,eta2) OLGModel12_ProgressiveIncomeTaxFn(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,r,kappa_j1,kappa_j2,A,alpha,delta,eta1,eta2); % Revenue raised by the progressive income tax (needed own function to avoid log(0) causing problems)
+FnsToEvaluate.IncomeTaxRevenue = @(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,r,kappa_j1,kappa_j2,gamma_1,gamma_2,A,alpha,delta,eta1,eta2)...
+    OLGModel12_ProgressiveIncomeTaxFn(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,r,kappa_j1,kappa_j2,gamma_1,gamma_2,A,alpha,delta,eta1,eta2); % Revenue raised by the progressive income tax (needed own function to avoid log(0) causing problems)
 
 % General Equilibrium conditions (these should evaluate to zero in general equilbrium)
 GeneralEqmEqns.capitalmarket = @(r,K,L,alpha,delta,A) r-alpha*A*(K^(alpha-1))*(L^(1-alpha)); % interest rate equals marginal product of capital net of depreciation
@@ -230,7 +234,8 @@ AgeConditionalStats=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEva
 %% Calculate some aggregates and print findings about them
 
 % Add consumption to the FnsToEvaluate
-FnsToEvaluate.Consumption=@(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,pension,r,kappa_j1,kappa_j2,A,alpha,delta,eta1,eta2,tau,AccidentBeq) OLGModel12_ConsumptionFn(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,pension,r,kappa_j1,kappa_j2,A,alpha,delta,eta1,eta2,tau,AccidentBeq);
+FnsToEvaluate.Consumption=@(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,pension,r,kappa_j1,kappa_j2,gamma_1,gamma_2,A,alpha,delta,eta1,eta2,tau,AccidentBeq)...
+    OLGModel12_ConsumptionFn(h1,h2,aprime,a,z1,z2,e1,e2,agej,Jr,pension,r,kappa_j1,kappa_j2,gamma_1,gamma_2,A,alpha,delta,eta1,eta2,tau,AccidentBeq);
 
 AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid,simoptions);
 
