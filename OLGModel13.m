@@ -149,7 +149,7 @@ Params.GdivYtarget = 0.15; % Government spending as a fraction of GDP (this is e
 
 %% Some initial values/guesses for variables that will be determined in general eqm
 Params.r=0.11;
-Params.pension=0.66; % Initial guess (this will be determined in general eqm)
+Params.pension=0.67; % Initial guess (this will be determined in general eqm)
 Params.AccidentBeq=0.04; % Accidental bequests (this is the lump sum transfer) 
 Params.G=0.19; % Government expenditure
 Params.eta1=0.17;
