@@ -13,6 +13,15 @@ Params.ptypemass=[1,1]; % Mass of households and firms are each equal to one
 addpath(genpath('./MatlabToolkits/'))
 
 %% Begin setting up to use VFI Toolkit to solve
+% The user can experiment with gridinterplayer=0 (pure discretization) or gridinterplayer=1 (linear interpolation b/w grid points).
+% If gridinterplayer=1, then you must set vfoptions.divideandconquer=1 (required for transition).
+vfoptions.gridinterplayer  = 0;
+vfoptions.ngridinterp      = 20;
+vfoptions.divideandconquer.household = 1;
+vfoptions.divideandconquer.firm = 0;
+vfoptions.level1n=11;
+simoptions.gridinterplayer = vfoptions.gridinterplayer;
+simoptions.ngridinterp     = vfoptions.ngridinterp;
 
 % Grid sizes to use for household
 
@@ -256,7 +265,7 @@ AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsT
 % decent initial guess before actually solving the general equilbrium
 fprintf('Check: L_h, L_f, K \n')
 [AggVars.L_h.Mean,AggVars.L_f.Mean,AggVars.K.Mean]
-fprintf('Check: K/L_f (should be about 2.03 \n')
+fprintf('Check: K/L_f (should be about 2.03) \n')
 AggVars.K.Mean/AggVars.L_f.Mean
 fprintf('Check: S \n')
 AggVars.S.Mean
@@ -314,7 +323,7 @@ AggregateTFP=Y/((AggVars.K.Mean^Params.alpha_k)*(AggVars.L_f.Mean^Params.alpha_l
 % Total value of firms
 temp=V.firm.*StationaryDist.firm;
 temp(StationaryDist.firm==0)=0; % Get rid of points that have V=-inf but zero mass which would give nan
-TotalValueOfFirms=sum(sum(temp));
+TotalValueOfFirms=sum(temp(isfinite(temp)));
 
 fprintf('Following are some aggregates of the model economy: \n')
 fprintf('Output: Y=%8.2f \n',AggVars.Output.Mean)

@@ -12,7 +12,6 @@ P=((1-tau_cg)*P0 + (1-tau_d)*D)/(1+r-tau_cg);
 
 Plag=P; % As stationary general eqm
 
-F=-Inf;
 if agej<Jr % If working age
     %consumption = labor income + accidental bequest + share holdings (including dividend) - capital gains tax - next period share holdings
     c=(1-tau_l)*w*kappa_j*exp(z+e)*Lhscale*h+((1-tau_d)*D+P0)*(s+AccidentBeq) -tau_cg*(P0-Plag)*(s+AccidentBeq)-P*sprime; 
