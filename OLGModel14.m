@@ -13,6 +13,15 @@ Params.ptypemass=[1,1]; % Mass of households and firms are each equal to one
 addpath(genpath('./MatlabToolkits/'))
 
 %% Begin setting up to use VFI Toolkit to solve
+% The user can experiment with gridinterplayer=0 (pure discretization) or gridinterplayer=1 (linear interpolation b/w grid points).
+% If gridinterplayer=1, then you must set vfoptions.divideandconquer=1 (required for transition).
+vfoptions.gridinterplayer  = 0;
+vfoptions.ngridinterp      = 20;
+vfoptions.divideandconquer.household = 1;
+vfoptions.divideandconquer.firm = 0;
+vfoptions.level1n=11;
+simoptions.gridinterplayer = vfoptions.gridinterplayer;
+simoptions.ngridinterp     = vfoptions.ngridinterp;
 
 % Grid sizes to use for household
 
@@ -242,7 +251,7 @@ GeneralEqmEqns.labormarket = @(L_h,L_f) L_h-L_f; % labor supply of households eq
 GeneralEqmEqns.pensions = @(PensionSpending,PayrollTaxRevenue) PensionSpending-PayrollTaxRevenue; % Retirement benefits equal Payroll tax revenue: pension*fractionretired-tau*w*H
 GeneralEqmEqns.bequests = @(AccidentalBeqLeft,AccidentBeq,n) AccidentalBeqLeft/(1+n)-AccidentBeq; % Accidental bequests received equal accidental bequests left
 GeneralEqmEqns.govbudget = @(G,tau_d,D,CapitalGainsTaxRevenue,CorpTaxRevenue) G-tau_d*D-CapitalGainsTaxRevenue-CorpTaxRevenue; % G is equal to the target, GdivYtarget*Y
-GeneralEqmEqns.firmdiscounting = @(firmbeta,r,tau_cg) firmbeta-1/(1+Params.r/(1-Params.tau_cg)); % Firms discount rate is related to market return rate
+GeneralEqmEqns.firmdiscounting = @(firmbeta,r,tau_cg) firmbeta-1/(1+r/(1-tau_cg)); % Firms discount rate is related to market return rate
 GeneralEqmEqns.dividends = @(D,DividendPaid) D-DividendPaid; % That the dividend households receive equals that which firms give
 GeneralEqmEqns.ShareIssuance = @(Sissued,P0,D,tau_cg,tau_d,r) P0-((((1-tau_cg)*P0 + (1-tau_d)*D)/(1+r-tau_cg))-Sissued); % P0=P-S, but substitute for P (see derivation inside the return fn)
 GeneralEqmEqns.CapitalOutputRatio =@(K,L_f,TargetKdivL) K/L_f-TargetKdivL;
@@ -256,7 +265,7 @@ AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsT
 % decent initial guess before actually solving the general equilbrium
 fprintf('Check: L_h, L_f, K \n')
 [AggVars.L_h.Mean,AggVars.L_f.Mean,AggVars.K.Mean]
-fprintf('Check: K/L_f (should be about 2.03 \n')
+fprintf('Check: K/L_f (should be about 2.03) \n')
 AggVars.K.Mean/AggVars.L_f.Mean
 fprintf('Check: S \n')
 AggVars.S.Mean
@@ -314,7 +323,7 @@ AggregateTFP=Y/((AggVars.K.Mean^Params.alpha_k)*(AggVars.L_f.Mean^Params.alpha_l
 % Total value of firms
 temp=V.firm.*StationaryDist.firm;
 temp(StationaryDist.firm==0)=0; % Get rid of points that have V=-inf but zero mass which would give nan
-TotalValueOfFirms=sum(sum(temp));
+TotalValueOfFirms=sum(temp(isfinite(temp)));
 
 fprintf('Following are some aggregates of the model economy: \n')
 fprintf('Output: Y=%8.2f \n',AggVars.Output.Mean)
