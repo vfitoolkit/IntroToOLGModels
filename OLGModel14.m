@@ -110,7 +110,7 @@ Params.delta=0.054; % Deprecitation of physical capital
 Params.capadjconstant=1.21; % term in the capital adjustment cost
 % Tax
 Params.tau_corp=0.34; % Tax rate on corporate earnings
-Params.phi=0.52; % Fraction of capital adjustment costs that can be deducted from corporate earnings
+Params.phi=0.5; % Fraction of capital adjustment costs that can be deducted from corporate earnings
 Params.tau_d=0.2; % Tax rate on dividends
 Params.tau_cg=0.2; % Tax rate on capital gains
 % Idiosyncatic productivity shocks
