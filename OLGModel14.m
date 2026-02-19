@@ -29,7 +29,7 @@ simoptions.ngridinterp     = vfoptions.ngridinterp;
 Params.agejshifter=19; % Age 20 minus one. Makes keeping track of actual age easy in terms of model age
 Params.J=100-Params.agejshifter; % =81, Number of period in life-cycle
 n_d.household=101; % Endogenous labour choice (fraction of time worked)
-n_a.household=101; % Endogenous share holdings
+n_a.household=201; % Endogenous share holdings
 % Exogenous labor productivity units shocks (next two lines)
 n_z.household=15; % AR(1) with age-dependent params
 vfoptions.n_e.household=3; % iid
@@ -37,7 +37,7 @@ N_j.household=Params.J; % Number of periods in finite horizon
 
 % Grids to use for firm
 n_d.firm=101; % Dividend payment
-n_a.firm=101; % Capital holdings
+n_a.firm=201; % Capital holdings
 n_z.firm=11; % Productivity shock
 N_j.firm=Inf; % Infinite horizon
 
