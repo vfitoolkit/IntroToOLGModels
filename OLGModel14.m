@@ -28,16 +28,16 @@ simoptions.ngridinterp     = vfoptions.ngridinterp;
 % Lets model agents from age 20 to age 100, so 81 periods
 Params.agejshifter=19; % Age 20 minus one. Makes keeping track of actual age easy in terms of model age
 Params.J=100-Params.agejshifter; % =81, Number of period in life-cycle
-n_d.household=51; % Endogenous labour choice (fraction of time worked)
-n_a.household=51; % Endogenous share holdings
+n_d.household=101; % Endogenous labour choice (fraction of time worked)
+n_a.household=101; % Endogenous share holdings
 % Exogenous labor productivity units shocks (next two lines)
 n_z.household=15; % AR(1) with age-dependent params
 vfoptions.n_e.household=3; % iid
 N_j.household=Params.J; % Number of periods in finite horizon
 
 % Grids to use for firm
-n_d.firm=51; % Dividend payment
-n_a.firm=51; % Capital holdings
+n_d.firm=101; % Dividend payment
+n_a.firm=101; % Capital holdings
 n_z.firm=11; % Productivity shock
 N_j.firm=Inf; % Infinite horizon
 
@@ -134,7 +134,7 @@ Params.G=0.1; % Government expenditure
 Params.firmbeta=1/(1+Params.r/(1-Params.tau_cg)); % 1/(1+r) but returns net of capital gains tax
 Params.D=0.2; % Dividends rate expected/received by households
 Params.P0=1;
-Params.Lhscale=0.26; % Scaling the household labor supply
+Params.Lhscale=0.22; % Scaling the household labor supply
 
 %% Grids for household
 
@@ -256,6 +256,7 @@ FnsToEvaluate.CorpTaxRevenue.firm = @(d,kprime,k,z,w,delta,alpha_k,alpha_l,capad
 % General Equilibrium conditions (these should evaluate to zero in general equilbrium)
 GeneralEqmEqns.sharemarket = @(S) S-1; % mass of all shares equals one
 GeneralEqmEqns.labormarket = @(L_h,L_f) L_h-L_f; % labor supply of households equals labor demand of firms
+GeneralEqmEqns.wages = @(L_h,L_f,w) OLGModel14_GE_wages(L_h,L_f,w); % Push GE toward wage-balanced agreement
 GeneralEqmEqns.pensions = @(PensionSpending,PayrollTaxRevenue) PensionSpending-PayrollTaxRevenue; % Retirement benefits equal Payroll tax revenue: pension*fractionretired-tau*w*H
 GeneralEqmEqns.bequests = @(AccidentalBeqLeft,AccidentBeq,n) AccidentalBeqLeft/(1+n)-AccidentBeq; % Accidental bequests received equal accidental bequests left
 GeneralEqmEqns.govbudget = @(G,tau_d,D,CapitalGainsTaxRevenue,CorpTaxRevenue) G-tau_d*D-CapitalGainsTaxRevenue-CorpTaxRevenue; % G is equal to the target, GdivYtarget*Y
