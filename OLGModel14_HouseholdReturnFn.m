@@ -1,4 +1,4 @@
-function F=OLGModel14_HouseholdReturnFn(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,r,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,tau_l,tau_d,tau_cg,Lhscale)
+function F=OLGModel14_HouseholdReturnFn(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,r,tau_l,tau_d,tau_cg,Lhscale)
 % Replace assets with 'share holdings'
 % Get rid of progressive taxes
 % Add Lhnormalize

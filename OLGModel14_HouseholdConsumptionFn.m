@@ -1,4 +1,4 @@
-function c=OLGModel14_HouseholdConsumptionFn(h,sprime,s,z,e,agej,Jr,pension,r,w,P0,D,kappa_j,AccidentBeq,tau_l,tau_d,tau_cg,Lhscale)
+function c=OLGModel14_HouseholdConsumptionFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg,Lhscale)
 % Replace assets with 'share holdings'
 % Get rid of progressive taxes
 % Add Lhnormalize

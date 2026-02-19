@@ -29,17 +29,21 @@ simoptions.ngridinterp     = vfoptions.ngridinterp;
 Params.agejshifter=19; % Age 20 minus one. Makes keeping track of actual age easy in terms of model age
 Params.J=100-Params.agejshifter; % =81, Number of period in life-cycle
 n_d.household=51; % Endogenous labour choice (fraction of time worked)
-n_a.household=501; % Endogenous share holdings
+n_a.household=51; % Endogenous share holdings
 % Exogenous labor productivity units shocks (next two lines)
 n_z.household=15; % AR(1) with age-dependent params
 vfoptions.n_e.household=3; % iid
 N_j.household=Params.J; % Number of periods in finite horizon
 
 % Grids to use for firm
-n_d.firm=101; % Dividend payment
-n_a.firm=501; % Capital holdings
+n_d.firm=51; % Dividend payment
+n_a.firm=51; % Capital holdings
 n_z.firm=11; % Productivity shock
 N_j.firm=Inf; % Infinite horizon
+
+%% Global parameters (applies to household and firm)
+% Risk-free rate of return
+Params.r=0.05;
 
 %% Parameters for household
 
@@ -124,14 +128,13 @@ Params.TargetKdivL=2.03;
 
 % Some initial values/guesses for variables that will be determined in general eqm
 Params.pension=0.4; % Initial guess (this will be determined in general eqm)
-Params.r=0.05;
-Params.w=1;
-Params.AccidentBeq=0.03; % Accidental bequests (this is the lump sum transfer)
+Params.w=1; % Wages, determines (household) labor supply and (firm) demand
+Params.AccidentBeq=0.01; % Accidental bequests (this is the lump sum transfer)
 Params.G=0.1; % Government expenditure
 Params.firmbeta=1/(1+Params.r/(1-Params.tau_cg)); % 1/(1+r) but returns net of capital gains tax
-Params.D=0.2; % Dividends
+Params.D=0.2; % Dividends rate expected/received by households
 Params.P0=1;
-Params.Lhscale=0.3; % Scaling the household labor supply
+Params.Lhscale=0.26; % Scaling the household labor supply
 
 %% Grids for household
 
@@ -139,7 +142,10 @@ Params.Lhscale=0.3; % Scaling the household labor supply
 d_grid.household=linspace(0,1,n_d.household)'; % Notice that it is imposing the 0<=h<=1 condition implicitly
 
 % Grid for share holdings
-a_grid.household=10*(linspace(0,1,n_a.household).^3)'; % The ^3 means most points are near zero, which is where the derivative of the value fn changes most.
+a_grid_cubed=linspace(0,1,ceil(n_a.household/2)).^3; % The ^3 means most points are near zero, which is where the derivative of the value fn changes most.
+a_grid_linear=linspace(1,10,floor(n_a.household/2)+1);
+a_grid.household=[a_grid_cubed, a_grid_linear(2:end)]';
+% a_grid.household=linspace(0,6,n_a.household)';
 
 % First, z, the AR(1) with age-dependent parameters
 [z_grid_J, pi_z_J] = discretizeLifeCycleAR1_FellaGallipoliPan(Params.rho_z,Params.sigma_epsilon_z,n_z.household,Params.J);
@@ -165,7 +171,9 @@ simoptions.pi_e.household=pi_e_J;
 
 %% Grids for firm
 d_grid.firm=linspace(0,1,n_d.firm)'; % Notice that it is imposing the d>=0 condition implicitly
-a_grid.firm=10*(linspace(0,1,n_a.firm).^3)'; % The ^3 means most points are near zero, which is where the derivative of the value fn changes most.
+a_grid_cubed=linspace(0,1,ceil(n_a.firm/2)).^3; % The ^3 means most points are near zero, which is where the derivative of the value fn changes most.
+a_grid_linear=linspace(1,10,floor(n_a.firm/2)+1);
+a_grid.firm=[a_grid_cubed, a_grid_linear(2:end)]';
 
 [z_grid.firm,pi_z.firm] = discretizeAR1_FarmerToda(0,Params.rho_z_firm,Params.sigma_z_e_firm,n_z.firm);
 z_grid.firm=exp(z_grid.firm);
@@ -176,14 +184,14 @@ z_grid.firm=exp(z_grid.firm);
 % For households
 DiscountFactorParamNames.household={'beta','sj'};
 % Notice we use 'OLGModel14_HouseholdReturnFn'
-ReturnFn.household=@(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,r,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,tau_l,tau_d,tau_cg,Lhscale)...
-    OLGModel14_HouseholdReturnFn(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,r,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,tau_l,tau_d,tau_cg,Lhscale);
+ReturnFn.household=@(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,r,tau_l,tau_d,tau_cg,Lhscale)...
+    OLGModel14_HouseholdReturnFn(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,r,tau_l,tau_d,tau_cg,Lhscale);
 
 % For firms
 DiscountFactorParamNames.firm={'firmbeta'};
 % Notice we use 'OLGModel14_FirmReturnFn'
-ReturnFn.firm=@(d,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_d,tau_cg)...
-    OLGModel14_FirmReturnFn(d,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_d,tau_cg);
+ReturnFn.firm=@(d,kprime,k,z,w,D,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_d,tau_cg)...
+    OLGModel14_FirmReturnFn(d,kprime,k,z,w,D,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_d,tau_cg);
 
 %% Now solve the value function iteration problem, just to check that things are working before we go to General Equilbrium
 disp('Test ValueFnIter')
@@ -216,7 +224,7 @@ disp('Test StationaryDist')
 StationaryDist=StationaryDist_Case1_FHorz_PType(jequaloneDist,AgeWeightsParamNames,PTypeDistParamNames,Policy,n_d,n_a,n_z,N_j,Names_i,pi_z,Params,simoptions);
 
 %% General eqm variables
-GEPriceParamNames={'r','pension','AccidentBeq','G','w','firmbeta','D','P0','Lhscale'}; 
+GEPriceParamNames={'pension','AccidentBeq','G','w','firmbeta','D','P0'}; 
 % We don't need P
 % We can get P from the equation that defines r as the return to the mutual fund
 % 1+r = (P0 +(1-tau_d)D - tau_cg(P0-P))/Plag
@@ -280,7 +288,6 @@ heteroagentoptions.verbose=1;
 p_eqm=HeteroAgentStationaryEqm_Case1_FHorz_PType(n_d, n_a, n_z, N_j, Names_i, [], pi_z, d_grid, a_grid, z_grid,jequaloneDist, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, AgeWeightsParamNames, PTypeDistParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 % p_eqm contains the general equilibrium parameter values
 % Put this into Params so we can calculate things about the initial equilibrium
-Params.r=p_eqm.r;
 Params.pension=p_eqm.pension;
 Params.AccidentBeq=p_eqm.AccidentBeq;
 Params.G=p_eqm.G;
@@ -288,7 +295,6 @@ Params.w=p_eqm.w;
 Params.firmbeta=p_eqm.firmbeta;
 Params.D=p_eqm.D;
 Params.P0=p_eqm.P0;
-Params.Lhscale=p_eqm.Lhscale;
 
 % Calculate a few things related to the general equilibrium.
 [V, Policy]=ValueFnIter_Case1_FHorz_PType(n_d,n_a,n_z,N_j, Names_i, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, vfoptions);
@@ -308,8 +314,8 @@ title('Life Cycle Profile: Share holdings')
 %% Calculate some aggregates and print findings about them
 
 % Add consumption to the FnsToEvaluate
-FnsToEvaluate.Consumption.household=@(h,sprime,s,z,e,agej,Jr,pension,r,w,P0,D,kappa_j,AccidentBeq,tau_l,tau_d,tau_cg,Lhscale) OLGModel14_HouseholdConsumptionFn(h,sprime,s,z,e,agej,Jr,pension,r,w,P0,D,kappa_j,AccidentBeq,tau_l,tau_d,tau_cg,Lhscale);
-FnsToEvaluate.Income.household=@(h,sprime,s,z,e,agej,Jr,pension,r,w,P0,D,kappa_j,AccidentBeq,tau_l,tau_d,tau_cg,Lhscale) OLGModel14_HouseholdIncomeFn(h,sprime,s,z,e,agej,Jr,pension,r,w,P0,D,kappa_j,AccidentBeq,tau_l,tau_d,tau_cg,Lhscale);
+FnsToEvaluate.Consumption.household=@(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg,Lhscale) OLGModel14_HouseholdConsumptionFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg,Lhscale);
+FnsToEvaluate.Income.household=@(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg,Lhscale) OLGModel14_HouseholdIncomeFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg,Lhscale);
 
 AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j, Names_i, d_grid, a_grid, z_grid,simoptions);
 

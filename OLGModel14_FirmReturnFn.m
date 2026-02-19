@@ -1,4 +1,4 @@
-function F=OLGModel14_FirmReturnFn(dividend,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_d,tau_cg)
+function F=OLGModel14_FirmReturnFn(dividend,kprime,k,z,w,D,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_d,tau_cg)
 % Whether we set it up so that dividends or equity issuance is the decision
 % variable is unimportant, here I use dividends as the decision variable.
 
@@ -32,6 +32,8 @@ s=dividend+invest+capitaladjcost-(profit-tau_corp*T);
 % Firms per-period objective
 if s>=0 % enforce that 'no share repurchases allowed'
     F=((1-tau_d)/(1-tau_cg))*dividend-s;
+    % Disfavor discrepencies between dividends paid and expected (D)
+    F=F-(D-dividend)^2;
 end
 
 % Note: dividend payments cannot be negative is enforced by the grid on
