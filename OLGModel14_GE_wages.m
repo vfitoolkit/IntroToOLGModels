@@ -9,18 +9,18 @@ if (L_h-L_f)^2 <= 10^(-6)
 elseif L_f>L_h
     if w>=1
         % Small increase
-        F=(L_f/L_h)*(w-1);
+        F=(L_f/L_h)*w;
     else
         % Larger increase
-        F=(L_f/L_h)^2*(1-w);
+        F=(L_f/L_h)^2/w;
     end
 else
-    if w>1
+    if w>=1
         % Large decrease (negative)
-        F=(L_h/L_f)^2*(1-w);
+        F=-(L_h/L_f)^2*w;
     else
         % Smaller decrease (negative)
-        F=(L_h/L_f)*(w-1);
+        F=-(L_h/L_f)/w;
     end
 end
 
