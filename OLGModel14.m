@@ -48,11 +48,11 @@ Params.r=0.05;
 %% Parameters for household
 
 % Discount rate
-Params.beta = 1.01; % Changed to get S to increase nearer to 1 given r=0.05 (ran it with beta=0.99, got S=0.3, so increased this; note that it interacts with sj to give the actual discount factor)
+Params.beta = 0.95; % Changed to get S to increase nearer to 1 given r=0.05 (ran it with beta=0.99, got S=0.3, so increased this; note that it interacts with sj to give the actual discount factor)
 % Preferences
 Params.sigma = 2; % Coeff of relative risk aversion (curvature of consumption)
 Params.eta = 1.5; % Curvature of leisure (This will end up being 1/Frisch elasty)
-Params.psi = 10; % Weight on leisure
+Params.psi = 2; % Weight on leisure
 
 % Demographics
 Params.agej=1:1:Params.J; % Is a vector of all the agej: 1,2,3,...,J
@@ -129,12 +129,12 @@ Params.TargetKdivL=2.03;
 % Some initial values/guesses for variables that will be determined in general eqm
 Params.pension=0.4; % Initial guess (this will be determined in general eqm)
 Params.w=1; % Wages, determines (household) labor supply and (firm) demand
-Params.AccidentBeq=0.01; % Accidental bequests (this is the lump sum transfer)
+Params.AccidentBeq=0.02; % Accidental bequests (this is the lump sum transfer)
 Params.G=0.1; % Government expenditure
 Params.firmbeta=1/(1+Params.r/(1-Params.tau_cg)); % 1/(1+r) but returns net of capital gains tax
 Params.D=0.2; % Dividends rate expected/received by households
 Params.P0=1;
-Params.Lhscale=0.22; % Scaling the household labor supply
+Params.Lhscale=0.21; % Scaling the household labor supply
 
 %% Grids for household
 
@@ -184,8 +184,8 @@ z_grid.firm=exp(z_grid.firm);
 % For households
 DiscountFactorParamNames.household={'beta','sj'};
 % Notice we use 'OLGModel14_HouseholdReturnFn'
-ReturnFn.household=@(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,r,tau_l,tau_d,tau_cg,Lhscale)...
-    OLGModel14_HouseholdReturnFn(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,r,tau_l,tau_d,tau_cg,Lhscale);
+ReturnFn.household=@(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,r,tau_l,tau_d,tau_cg)...
+    OLGModel14_HouseholdReturnFn(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,r,tau_l,tau_d,tau_cg);
 
 % For firms
 DiscountFactorParamNames.firm={'firmbeta'};
@@ -314,8 +314,8 @@ title('Life Cycle Profile: Share holdings')
 %% Calculate some aggregates and print findings about them
 
 % Add consumption to the FnsToEvaluate
-FnsToEvaluate.Consumption.household=@(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg,Lhscale) OLGModel14_HouseholdConsumptionFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg,Lhscale);
-FnsToEvaluate.Income.household=@(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg,Lhscale) OLGModel14_HouseholdIncomeFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg,Lhscale);
+FnsToEvaluate.Consumption.household=@(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg) OLGModel14_HouseholdConsumptionFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg);
+FnsToEvaluate.Income.household=@(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg) OLGModel14_HouseholdIncomeFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg);
 
 AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j, Names_i, d_grid, a_grid, z_grid,simoptions);
 
