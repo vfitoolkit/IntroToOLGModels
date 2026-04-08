@@ -1,4 +1,4 @@
-function income=OLGModel14_HouseholdIncomeFn(h,sprime,s,z,e,agej,Jr,pension,r,w,P0,D,kappa_j,AccidentBeq,tau_l,tau_d,tau_cg,Lhscale)
+function income=OLGModel14_HouseholdIncomeFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg)
 % Replace assets with 'share holdings'
 % Get rid of progressive taxes
 % Add Lhnormalize
@@ -15,7 +15,7 @@ Plag=P; % As stationary general eqm
 if agej<Jr % If working age
     %consumption = labor income + accidental bequest + share holdings (including dividend) - capital gains tax - next period share holdings
     % income just is consumption but without subtracting the term for next period share holdings (-P*sprime)
-    income=(1-tau_l)*w*kappa_j*exp(z+e)*Lhscale*h+((1-tau_d)*D+P0)*(s+AccidentBeq) -tau_cg*(P0-Plag)*(s+AccidentBeq); 
+    income=(1-tau_l)*w*kappa_j*exp(z+e)*h+((1-tau_d)*D+P0)*(s+AccidentBeq) -tau_cg*(P0-Plag)*(s+AccidentBeq); 
 else % Retirement
     income=pension+((1-tau_d)*D+P0)*(s+AccidentBeq) -tau_cg*(P0-Plag)*(s+AccidentBeq);
 end
