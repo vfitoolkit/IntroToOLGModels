@@ -346,7 +346,7 @@ fprintf('Capital-Output ratio (firm side): K/Y=%8.2f \n',AggVars.K.Mean/Y)
 fprintf('Total asset value (HH side): P*S=%8.2f \n',P*AggVars.S.Mean)
 fprintf('Total firm value (firm side): Value of firm=%8.2f \n',TotalValueOfFirms)
 fprintf('Consumption-Output ratio: C/Y=%8.2f \n',AggVars.Consumption.Mean/Y)
-fprintf('Government-to-Output ratio: G/Y=%8.2f \n', Params.G/Y)
+fprintf('Government-to-Output ratio: G/Y=%8.2f \n', G/Y)
 fprintf('Wage: w=%8.2f \n',Params.w)
 
 
