@@ -2,7 +2,7 @@
 % We can essentially just think of households and firms as two different
 % permanent types of agents (the household problem is finite horizon, while the 
 % firm problem is infinite horizon, but this is fine). Obviously a bunch of
-% things related to how we set up the general equilbrium change.
+% things related to how we set up the general equilibrium change.
 
 Names_i={'household','firm'};
 PTypeDistParamNames={'ptypemass'};
@@ -124,13 +124,14 @@ Params.sigma_z_e_firm=0.211;
 % This is relevant to the general equilibrium conditions
 Params.TargetKdivL=2.03;
 
+Params.AccidentBeq=0.02; % Accidental bequests (this is the lump sum transfer); actual value from AggVars calculation
+Params.G=0.1; % Government expenditure; actual value from AggVars calculation
+
 %% Remaining parameters
 
 % Some initial values/guesses for variables that will be determined in general eqm
 Params.pension=0.4; % Initial guess (this will be determined in general eqm)
 Params.w=1; % Wages, determines (household) labor supply and (firm) demand
-Params.AccidentBeq=0.02; % Accidental bequests (this is the lump sum transfer)
-Params.G=0.1; % Government expenditure
 Params.firmbeta=1/(1+Params.r/(1-Params.tau_cg)); % 1/(1+r) but returns net of capital gains tax
 Params.D=0.2; % Dividends rate expected/received by households
 Params.P0=1;
@@ -193,7 +194,7 @@ DiscountFactorParamNames.firm={'firmbeta'};
 ReturnFn.firm=@(d,kprime,k,z,w,D,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_d,tau_cg)...
     OLGModel14_FirmReturnFn(d,kprime,k,z,w,D,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_d,tau_cg);
 
-%% Now solve the value function iteration problem, just to check that things are working before we go to General Equilbrium
+%% Now solve the value function iteration problem, just to check that things are working before we go to General Equilibrium
 disp('Test ValueFnIter')
 tic;
 % Note: z_grid and pi_z, this will be ignored due to presence of vfoptions.z_grid_J and vfoptions.pi_z_J
@@ -224,7 +225,7 @@ disp('Test StationaryDist')
 StationaryDist=StationaryDist_Case1_FHorz_PType(jequaloneDist,AgeWeightsParamNames,PTypeDistParamNames,Policy,n_d,n_a,n_z,N_j,Names_i,pi_z,Params,simoptions);
 
 %% General eqm variables
-GEPriceParamNames={'pension','AccidentBeq','G','w','firmbeta','D','P0'}; 
+GEPriceParamNames={'pension','w','firmbeta','D','P0'}; 
 % We don't need P
 % We can get P from the equation that defines r as the return to the mutual fund
 % 1+r = (P0 +(1-tau_d)D - tau_cg(P0-P))/Plag
@@ -243,7 +244,7 @@ FnsToEvaluate.L_h.household = @(h,sprime,s,z,e,kappa_j,Lhscale) kappa_j*exp(z+e)
 FnsToEvaluate.S.household = @(h,sprime,s,z,e) s; % Aggregate share holdings
 FnsToEvaluate.PensionSpending.household = @(h,sprime,s,z,e,pension,agej,Jr) (agej>=Jr)*pension; % Total spending on pensions
 FnsToEvaluate.PayrollTaxRevenue.household = @(h,sprime,s,z,e,agej,Jr,tau_l,w,kappa_j,Lhscale) (agej<Jr)*tau_l*w*kappa_j*exp(z+e)*Lhscale*h; % Total spending on pensions
-FnsToEvaluate.AccidentalBeqLeft.household = @(h,sprime,s,z,e,sj) sprime*(1-sj); % Accidental bequests left by people who die
+FnsToEvaluate.AccidentalBeq.household = @(h,sprime,s,z,e,sj,n) sprime*(1-sj)/(1+n); % Accidental bequests left by people who die, (possibly after estate taxes) and dilution to dependents
 FnsToEvaluate.CapitalGainsTaxRevenue.household = @(h,sprime,s,z,e,tau_cg,P0,D,tau_d,r) tau_cg*(P0-(((1-tau_cg)*P0 + (1-tau_d)*D)/(1+r-tau_cg)))*s; % tau_cg*(P0-Plag)*s, but substitute P=Plag, and then substitute for P
 % From firms
 FnsToEvaluate.Output.firm = @(d,kprime,k,z,w,alpha_k,alpha_l) z*(k^alpha_k)*((w/(alpha_l*z*(k^alpha_k)))^(1/(alpha_l-1)))^alpha_l; % Production function z*(k^alpha_k)*(l^alpha_l) (substituting for l)
@@ -253,12 +254,10 @@ FnsToEvaluate.DividendPaid.firm = @(d,kprime,k,z,w) d; % dividend paid by firm
 FnsToEvaluate.Sissued.firm = @(d,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi) OLGModel14_FirmShareIssuance(d,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi); % Share issuance
 FnsToEvaluate.CorpTaxRevenue.firm = @(d,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi) OLGModel14_FirmCorporateTaxRevenue(d,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi); % revenue from the corporate profits tax
 
-% General Equilibrium conditions (these should evaluate to zero in general equilbrium)
+% General Equilibrium conditions (these should evaluate to zero in general equilibrium)
 GeneralEqmEqns.sharemarket = @(S) S-1; % mass of all shares equals one
 GeneralEqmEqns.labormarket = @(L_h,L_f) L_h-L_f; % labor supply of households equals labor demand of firms
 GeneralEqmEqns.pensions = @(PensionSpending,PayrollTaxRevenue) PensionSpending-PayrollTaxRevenue; % Retirement benefits equal Payroll tax revenue: pension*fractionretired-tau*w*H
-GeneralEqmEqns.bequests = @(AccidentalBeqLeft,AccidentBeq,n) AccidentalBeqLeft/(1+n)-AccidentBeq; % Accidental bequests received equal accidental bequests left
-GeneralEqmEqns.govbudget = @(G,tau_d,D,CapitalGainsTaxRevenue,CorpTaxRevenue) G-tau_d*D-CapitalGainsTaxRevenue-CorpTaxRevenue; % G is equal to the target, GdivYtarget*Y
 GeneralEqmEqns.firmdiscounting = @(firmbeta,r,tau_cg) firmbeta-1/(1+r/(1-tau_cg)); % Firms discount rate is related to market return rate
 GeneralEqmEqns.dividends = @(D,DividendPaid) D-DividendPaid; % That the dividend households receive equals that which firms give
 GeneralEqmEqns.ShareIssuance = @(Sissued,P0,D,tau_cg,tau_d,r) P0-((((1-tau_cg)*P0 + (1-tau_d)*D)/(1+r-tau_cg))-Sissued); % P0=P-S, but substitute for P (see derivation inside the return fn)
@@ -270,7 +269,7 @@ disp('Test AggVars')
 AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j,Names_i, d_grid, a_grid, z_grid,simoptions);
 
 % Next few lines were used to try a few parameter values so as to get a
-% decent initial guess before actually solving the general equilbrium
+% decent initial guess before actually solving the general equilibrium
 fprintf('Check: L_h, L_f, K \n')
 [AggVars.L_h.Mean,AggVars.L_f.Mean,AggVars.K.Mean]
 fprintf('Check: K/L_f (should be about 2.03) \n')
@@ -289,8 +288,8 @@ p_eqm=HeteroAgentStationaryEqm_Case1_FHorz_PType(n_d, n_a, n_z, N_j, Names_i, []
 % p_eqm contains the general equilibrium parameter values
 % Put this into Params so we can calculate things about the initial equilibrium
 Params.pension=p_eqm.pension;
-Params.AccidentBeq=p_eqm.AccidentBeq;
-Params.G=p_eqm.G;
+% Params.AccidentBeq=p_eqm.AccidentBeq;
+% Params.G=p_eqm.G;
 Params.w=p_eqm.w;
 Params.firmbeta=p_eqm.firmbeta;
 Params.D=p_eqm.D;
@@ -322,6 +321,15 @@ AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsT
 Y=AggVars.Output.Mean;
 
 P=((1-Params.tau_cg)*Params.P0 + (1-Params.tau_d)*Params.D)/(1+Params.r-Params.tau_cg);
+
+if AggVars.CapitalGainsTaxRevenue.household.Mean<0
+    error("Negative Capital Gains revenue")
+elseif AggVars.CorpTaxRevenue.firm.Mean<0
+    error("Negative Corp Tax revenue")
+% elseif Params.D<0
+%     error("Negative dividend rate")
+end
+G=Params.tau_d*Params.D+AggVars.CapitalGainsTaxRevenue.household.Mean+AggVars.CorpTaxRevenue.firm.Mean; % If G influenced any GEqm equations, we'd need it to equilibrate with them
 
 % Calculate the aggregate TFP as output/((capital^alpha_k)*(labor^alpha_l))
 AggregateTFP=Y/((AggVars.K.Mean^Params.alpha_k)*(AggVars.L_f.Mean^Params.alpha_l));
