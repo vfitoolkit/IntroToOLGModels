@@ -1,4 +1,4 @@
-%% OLG Model 14: Heterogenous households and heterogeneous firms
+%% OLG Model 14: Heterogeneous households and heterogeneous firms
 % We can essentially just think of households and firms as two different
 % permanent types of agents (the household problem is finite horizon, while the 
 % firm problem is infinite horizon, but this is fine). Obviously a bunch of
@@ -51,7 +51,7 @@ Params.r=0.05;
 Params.beta = 0.95; % Changed to get S to increase nearer to 1 given r=0.05 (ran it with beta=0.99, got S=0.3, so increased this; note that it interacts with sj to give the actual discount factor)
 % Preferences
 Params.sigma = 2; % Coeff of relative risk aversion (curvature of consumption)
-Params.eta = 1.5; % Curvature of leisure (This will end up being 1/Frisch elasty)
+Params.eta = 1.5; % Curvature of leisure (This will end up being 1/Frisch elasticity)
 Params.psi = 2; % Weight on leisure
 
 % Demographics
@@ -96,7 +96,7 @@ Params.sj(end)=0; % In the present model the last period (j=J) value of sj is ac
 % Warm glow of bequest
 Params.warmglow1=0.3; % (relative) importance of bequests
 Params.warmglow2=3; % bliss point of bequests (essentially, the target amount)
-Params.warmglow3=Params.sigma; % By using the same curvature as the utility of consumption it makes it much easier to guess appropraite parameter values for the warm glow
+Params.warmglow3=Params.sigma; % By using the same curvature as the utility of consumption it makes it much easier to guess appropriate parameter values for the warm glow
 
 % Taxes
 Params.tau_l = 0.2; % Tax rate on labour income
@@ -105,7 +105,7 @@ Params.tau_l = 0.2; % Tax rate on labour income
 % Production
 Params.alpha_k=0.311; % diminishing returns to capital input
 Params.alpha_l=0.650; % diminishing returns to labor input
-Params.delta=0.054; % Deprecitation of physical capital
+Params.delta=0.054; % Depreciation of physical capital
 % Capital adjustment costs
 Params.capadjconstant=1.21; % term in the capital adjustment cost
 % Tax
@@ -113,7 +113,7 @@ Params.tau_corp=0.34; % Tax rate on corporate earnings
 Params.phi=0.5; % Fraction of capital adjustment costs that can be deducted from corporate earnings
 Params.tau_d=0.2; % Tax rate on dividends
 Params.tau_cg=0.2; % Tax rate on capital gains
-% Idiosyncatic productivity shocks
+% Idiosyncratic productivity shocks
 Params.rho_z_firm=0.767;
 Params.sigma_z_e_firm=0.211;
 
