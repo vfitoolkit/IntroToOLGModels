@@ -257,15 +257,15 @@ AgeConditionalStats=LifeCycleProfiles_FHorz_Case1_PType(StationaryDist,Policy,Fn
 Params.S_agej_first=max(find(AgeConditionalStats.household.Mean>0.1,1,'first')-1,1);
 Params.S_agej_last=min(find(AgeConditionalStats.household.Mean>0.5,1,'last')+1,length(AgeConditionalStats.household.Mean)); % warmglow creates extra long tail we want to ignore
 [~,S_agej_peak]=max(AgeConditionalStats.household.Mean);
-S_peak_inflection_value=(1-1/Params.J)*AgeConditionalStats.household.Mean(S_agej_peak);
+S_peak_inflection_value=0.95*AgeConditionalStats.household.Mean(S_agej_peak);
 for S_agej_peak_first=S_agej_peak:-1:Params.S_agej_first
-    if AgeConditionalStats.household.Mean(Params.S_agej_peak_first)<S_peak_inflection_value
+    if AgeConditionalStats.household.Mean(S_agej_peak_first)<S_peak_inflection_value
         break
     end
 end
 Params.S_agej_peak_first=S_agej_peak_first;
-for S_agej_peak_last=Params.S_agej_last:-1:S_agej_peak
-    if AgeConditionalStats.household.Mean(Params.S_agej_peak_last-1)>S_peak_inflection_value
+for S_agej_peak_last=S_agej_peak:Params.S_agej_last
+    if AgeConditionalStats.household.Mean(S_agej_peak_last)<S_peak_inflection_value
         break
     end
 end
