@@ -1,4 +1,4 @@
-function c=OLGModel14_HouseholdConsumptionFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg,S_agej_first,S_agej_peak,S_agej_last)
+function cg=OLGModel14_HouseholdCapitalGainsFn(h,sprime,s,z,e,agej,P0,AccidentBeq,r,tau_cg,S_agej_first,S_agej_peak,S_agej_last)
 % Replace assets with 'share holdings'
 % Get rid of progressive taxes
 % Add Lhnormalize
@@ -9,7 +9,6 @@ function c=OLGModel14_HouseholdConsumptionFn(h,sprime,s,z,e,agej,Jr,pension,w,P0
 % Plag=P;
 % And thus we have P=((1-tau_cg)*P0 + (1-tau_d)*D)/(1+r-tau_cg);
 
-P=P0;
 if sprime>=s
     Plag=P0; % We are holding or buying, so no capital gains
 else
@@ -24,13 +23,6 @@ else
     end
 end
 
-if agej<Jr % If working age
-    %consumption = labor income + accidental bequest + share holdings (including dividend) - capital gains tax - next period share holdings
-    c=(1-tau_l)*w*kappa_j*exp(z+e)*h+((1-tau_d)*D+P0)*(s+AccidentBeq) -tau_cg*(P0-Plag)*(s+AccidentBeq)-P*sprime; 
-else % Retirement
-    c=pension+((1-tau_d)*D+P0)*(s+AccidentBeq) -tau_cg*(P0-Plag)*(s+AccidentBeq) - P*sprime;
-end
-
-% Notice that sprime>=0 is being implicitly imposed by grid on s
+cg=tau_cg*(P0-Plag)*(s+AccidentBeq);
 
 end

@@ -133,8 +133,13 @@ Params.AccidentBeq=0.02; % Accidental bequests (this is the lump sum transfer)
 Params.G=0.1; % Government expenditure
 Params.firmbeta=1/(1+Params.r/(1-Params.tau_cg)); % 1/(1+r) but returns net of capital gains tax
 Params.D=0.2; % Dividends rate expected/received by households
-Params.P0=1;
-Params.Lhscale=0.21; % Scaling the household labor supply
+Params.P0=2.22; % This price is not 1 because we need price for older and younger agents to balance
+Params.Lhscale=0.22; % Scaling the household labor supply
+
+% We build a simple model of acquiring and disposing of stock over a lifetime
+Params.S_agej_first=20; % the age at which we start acquiring more stock than noise
+Params.S_agej_peak=Params.Jr+1; % the age of peak acquisition
+Params.S_agej_last=Params.J-10; % the age of final disposal
 
 %% Grids for household
 
@@ -184,8 +189,8 @@ z_grid.firm=exp(z_grid.firm);
 % For households
 DiscountFactorParamNames.household={'beta','sj'};
 % Notice we use 'OLGModel14_HouseholdReturnFn'
-ReturnFn.household=@(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,r,tau_l,tau_d,tau_cg)...
-    OLGModel14_HouseholdReturnFn(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,r,tau_l,tau_d,tau_cg);
+ReturnFn.household=@(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,r,tau_l,tau_d,tau_cg,S_agej_first,S_agej_peak,S_agej_last)...
+    OLGModel14_HouseholdReturnFn(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,r,tau_l,tau_d,tau_cg,S_agej_first,S_agej_peak,S_agej_last);
 
 % For firms
 DiscountFactorParamNames.firm={'firmbeta'};
@@ -243,8 +248,14 @@ FnsToEvaluate.L_h.household = @(h,sprime,s,z,e,kappa_j,Lhscale) kappa_j*exp(z+e)
 FnsToEvaluate.S.household = @(h,sprime,s,z,e) s; % Aggregate share holdings
 FnsToEvaluate.PensionSpending.household = @(h,sprime,s,z,e,pension,agej,Jr) (agej>=Jr)*pension; % Total spending on pensions
 FnsToEvaluate.PayrollTaxRevenue.household = @(h,sprime,s,z,e,agej,Jr,tau_l,w,kappa_j,Lhscale) (agej<Jr)*tau_l*w*kappa_j*exp(z+e)*Lhscale*h; % Total spending on pensions
-FnsToEvaluate.AccidentalBeqLeft.household = @(h,sprime,s,z,e,sj) sprime*(1-sj); % Accidental bequests left by people who die
-FnsToEvaluate.CapitalGainsTaxRevenue.household = @(h,sprime,s,z,e,tau_cg,P0,D,tau_d,r) tau_cg*(P0-(((1-tau_cg)*P0 + (1-tau_d)*D)/(1+r-tau_cg)))*s; % tau_cg*(P0-Plag)*s, but substitute P=Plag, and then substitute for P
+FnsToEvaluate.AccidentalBeq.household = @(h,sprime,s,z,e,sj,n) sprime*(1-sj)/(1+n); % Accidental bequests left by people who die, (possibly after estate taxes) and dilution to dependents
+FnsToEvaluate.CapitalGainsTaxRevenue.household = @(h,sprime,s,z,e,agej,P0,AccidentBeq,r,tau_cg,S_agej_first,S_agej_peak,S_agej_last) OLGModel14_HouseholdCapitalGainsFn(h,sprime,s,z,e,agej,P0,AccidentBeq,r,tau_cg,S_agej_first,S_agej_peak,S_agej_last);
+
+AgeConditionalStats=LifeCycleProfiles_FHorz_Case1_PType(StationaryDist,Policy,FnsToEvaluate.S,Params,n_d,n_a,n_z,N_j,Names_i,d_grid,a_grid,z_grid,simoptions);
+Params.S_agej_first=max(find(AgeConditionalStats.household.Mean>0.2,1,'first')-1,1);
+Params.S_agej_last=min(find(AgeConditionalStats.household.Mean>0.5,1,'last')+1,length(AgeConditionalStats.household.Mean));
+[~,Params.S_agej_peak]=max(AgeConditionalStats.household.Mean);
+
 % From firms
 FnsToEvaluate.Output.firm = @(d,kprime,k,z,w,alpha_k,alpha_l) z*(k^alpha_k)*((w/(alpha_l*z*(k^alpha_k)))^(1/(alpha_l-1)))^alpha_l; % Production function z*(k^alpha_k)*(l^alpha_l) (substituting for l)
 FnsToEvaluate.L_f.firm = @(d,kprime,k,z,w,alpha_k,alpha_l) (w/(alpha_l*z*(k^alpha_k)))^(1/(alpha_l-1)); % (effective units of) labor demanded by firm
@@ -314,8 +325,8 @@ title('Life Cycle Profile: Share holdings')
 %% Calculate some aggregates and print findings about them
 
 % Add consumption to the FnsToEvaluate
-FnsToEvaluate.Consumption.household=@(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg) OLGModel14_HouseholdConsumptionFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg);
-FnsToEvaluate.Income.household=@(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg) OLGModel14_HouseholdIncomeFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg);
+FnsToEvaluate.Consumption.household=@(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg,S_agej_first,S_agej_peak,S_agej_last) OLGModel14_HouseholdConsumptionFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg,S_agej_first,S_agej_peak,S_agej_last);
+FnsToEvaluate.Income.household=@(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg,S_agej_first,S_agej_peak,S_agej_last) OLGModel14_HouseholdIncomeFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg,S_agej_first,S_agej_peak,S_agej_last);
 
 AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j, Names_i, d_grid, a_grid, z_grid,simoptions);
 
@@ -335,7 +346,7 @@ fprintf('Following are some aggregates of the model economy: \n')
 fprintf('Output: Y=%8.2f \n',AggVars.Output.Mean)
 fprintf('Aggregate TFP: Y=%8.2f \n',AggregateTFP)
 fprintf('Capital-Output ratio (firm side): K/Y=%8.2f \n',AggVars.K.Mean/Y)
-fprintf('Total asset value (HH side): P*S=%8.2f \n',P*AggVars.S.Mean)
+fprintf('Total asset value (HH side): P*S=%8.2f; n.b.: P*S/P0=%8.2f \n',P*AggVars.S.Mean,P*AggVars.S.Mean/Params.P0)
 fprintf('Total firm value (firm side): Value of firm=%8.2f \n',TotalValueOfFirms)
 fprintf('Consumption-Output ratio: C/Y=%8.2f \n',AggVars.Consumption.Mean/Y)
 fprintf('Government-to-Output ratio: G/Y=%8.2f \n', Params.G/Y)

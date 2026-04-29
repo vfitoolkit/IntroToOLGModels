@@ -1,4 +1,4 @@
-function income=OLGModel14_HouseholdIncomeFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg)
+function income=OLGModel14_HouseholdIncomeFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg,S_agej_first,S_agej_peak,S_agej_last)
 % Replace assets with 'share holdings'
 % Get rid of progressive taxes
 % Add Lhnormalize
@@ -7,10 +7,21 @@ function income=OLGModel14_HouseholdIncomeFn(h,sprime,s,z,e,agej,Jr,pension,w,P0
 % 1+r = (P0 +(1-tau_d)D - tau_cg(P0-P))/Plag
 % We are looking at stationary general eqm, so
 % Plag=P;
-% And thus we have
-P=((1-tau_cg)*P0 + (1-tau_d)*D)/(1+r-tau_cg);
+% And thus we have P=((1-tau_cg)*P0 + (1-tau_d)*D)/(1+r-tau_cg);
 
-Plag=P; % As stationary general eqm
+if sprime>=s
+    Plag=P0; % We are holding or buying, so no capital gains
+else
+    if agej<=S_agej_peak
+        Plag=P0*(1-2*r); % Dispose of shares presumably acquired recently
+    else
+        % Estimate where we are past peak accumulation and mirror around to
+        % proportional acquisition point
+        agej_selling_pct=(agej-S_agej_peak)/(S_agej_last-S_agej_peak);
+        agej_bought=S_agej_peak-ceil(agej_selling_pct*(S_agej_peak-S_agej_first));
+        Plag=P0*(1-2*r)^(agej-agej_bought);
+    end
+end
 
 if agej<Jr % If working age
     %consumption = labor income + accidental bequest + share holdings (including dividend) - capital gains tax - next period share holdings
