@@ -26,9 +26,11 @@ else
     cg=tau_cg*(P0-Plag)*(s+AccidentBeq-sprime);
 end
 
-
 if at_death && agej_bought>=S_agej_first
     % Sell all remaining shares from first acquisition to buy-point (using geometric mean to average acquisition cost)
     Plag=P0*(1-2*r)^(agej_bought-sqrt(agej_bought-S_agej_first));
     cg=cg+tau_cg*(P0-Plag)*sprime;
+end
+
+
 end
