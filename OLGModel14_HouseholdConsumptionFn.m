@@ -18,11 +18,15 @@ else
     if agej<=S_agej_peak_first
         agej_bought=agej-1;
         Plag=P0*(1-2*r); % Dispose of shares presumably acquired recently
+    elseif S_agej_peak_last==S_agej_last % Bulk liquidation
+        % Sell all remaining shares from first acquisition to buy-point (using geometric mean to average acquisition cost)
+        agej_bought=S_agej_peak_first-sqrt(S_agej_peak_first-S_agej_first);
+        Plag=P0*(1-2*r)^(agej-agej_bought);
     else
         % Estimate where we are past peak accumulation and mirror around to
         % proportional acquisition point
         agej_selling_pct=(agej-S_agej_peak_last)/(S_agej_last-S_agej_peak_last);
-        agej_bought=S_agej_peak_first-ceil(agej_selling_pct*(S_agej_peak_first-S_agej_first));
+        agej_bought=S_agej_peak_first-agej_selling_pct*(S_agej_peak_first-S_agej_first);
         Plag=P0*(1-2*r)^(agej-agej_bought);
     end
     cg=tau_cg*(P0-Plag)*(s+AccidentBeq-sprime);
