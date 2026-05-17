@@ -1,2 +1,17 @@
-# matlab auxiliary files 
+# matlab auxiliary files
 *.asv
+
+# CMA-ES intermediate files
+outcmaes*.dat
+variablescmaes.mat
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
