@@ -28,7 +28,7 @@ figure_c=0; % I like to use a counter for the figures. Makes it easier to keep t
 Params.beta = 0.99;
 % Preferences
 Params.sigma = 2; % Coeff of relative risk aversion (curvature of consumption)
-Params.eta = 1.5; % Curvature of leisure (This will end up being 1/Frisch elasty)
+Params.eta = 1.5; % Curvature of leisure (This will end up being 1/Frisch elasticity)
 Params.psi = 10; % Weight on leisure
 
 Params.A=1; % Aggregate TFP. Not actually used anywhere.
@@ -69,7 +69,7 @@ DiscountFactorParamNames={'beta'};
 ReturnFn=@(h,aprime,a,agej,w,sigma,psi,eta,Jr,pension,tau)...
     OLGModel1_ReturnFn(h,aprime,a,agej,w,sigma,psi,eta,Jr,pension,tau);
 
-%% Now solve the value function iteration problem, just to check that things are working before we go to General Equilbrium
+%% Now solve the value function iteration problem, just to check that things are working before we go to General Equilibrium
 disp('Test ValueFnIter')
 vfoptions=struct(); % Just using the defaults.
 tic;
@@ -118,20 +118,20 @@ GEPriceParamNames={'w','tau'};
 FnsToEvaluate.L = @(h,aprime,a) h; % Aggregate labour supply
 % This version of the model is simple enough that tax revenues and pension expenditures can all just be calculated 'directly'.
 
-% General Equilibrium conditions (these should evaluate to zero in general equilbrium)
+% General Equilibrium conditions (these should evaluate to zero in general equilibrium)
 GeneralEqmEqns.labormarket = @(w,alpha,L,A) w-(1-alpha)*A*L^(-alpha); % wage equals marginal product of labour
 GeneralEqmEqns.pensionbalance = @(pension,L,J,Jr,tau,w) pension*((J-Jr)/J)-tau*w*L; % Retirement benefits equal Payroll tax revenue: pension*fractionretired-tau*w*H
 % Note: Inputs to general equilibrium conditions must be either aggregate variables or parameters
 
 %% Test
-disp('Test AggVars')
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid);
+disp('Test AllStats')
+AllStats=EvalFnOnAgentDist_AllStats_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid);
 
 % Advanced: If you did want to test the GeneralEqmEqns to makes sure they are doing what you expect the following commented out lines show how
 % % % To be able to test the general equilibrium conditions you need to add the aggregate variables into Params
-% % AggVarNames=fieldnames(AggVars);
-% % for ii=1:length(AggVarNames)
-% %     Params.(AggVarNames{ii})=AggVars.(AggVarNames{ii}).Mean;
+% % AllStatsNames=fieldnames(AllStats);
+% % for ii=1:length(AllStatsNames)
+% %     Params.(AllStatsNames{ii})=AllStats.(AllStatsNames{ii}).Mean;
 % % end
 % % GeneralEqmConditionsVec=real(GeneralEqmConditions_Case1_v2(GeneralEqmEqns,Params, 2));
 

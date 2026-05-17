@@ -1,0 +1,204 @@
+
+\subsection{OLG Model 11: Permanent Types 2, Male and female households}
+This example models two kinds of agents, male and female. Both agents solve the same problem but face different earnings, both in terms of their deterministic life-cycle profile of earnings and in terms of the earnings shock processes they face. Again we are going to adapt OLG Model 6. We will write out the household problem expicitly here, and the rest of the stationary general equilibrium definition is just the same as it was in OLG Model 10 (except of course that there are now 2 permananent agent types, not 3).
+
+The household problem is,
+\begin{eqnarray*}
+ V_i(a,z,e,j)&=& \max_{c,h,a'} \frac{c^{1-\sigma}}{1-\sigma} - \psi \frac{h^{1+\eta}}{1+\eta}  + \beta s_j E_{z',e'}[V_i(a',j+1,z',e')|z] \\
+&&\text{if working, }j<=Jr: Income=ra+w* \kappa_{i,j}*exp(\gamma+z_i+e_i) h \\
+&&\text{if retired, }j\geq Jr: Income=ra \\
+&& IncomeTax=\eta_1+\eta_2*log(Income)*Income \\
+&&\text{if working, }j<=Jr: c+a'=(1-\tau) w \kappa_{i,j}*exp(\gamma+z_i+e_i) h + (1+r) a -IncomeTax +(1+r)AccidentBeq\\
+&&\text{if retired, }j\geq Jr: c+a'=pension+ (1+r) a -IncomeTax +(1+r)AccidentBeq +\mathbb{I}_{j=J} warmglow(a') \\
+&& 0\leq h \leq 1 \\
+&& z_i'=\rho_{z,i} z_i + \epsilon, \quad \epsilon \sim N(0,\sigma_{\epsilon,z,i}^2) \\
+&& e \sim N(0,\sigma_{e,i}^2)
+\end{eqnarray*}
+notice that there are now $i$ separate household problems, in our case two which we will give the names 'male' and 'female'. The differences between male and female households are just about the labor productivity parameters, $\kappa_{i,j}$, $\gamma_i$, $\rho_{z,i}$, $\sigma_{\epsilon,z,i}$, and $\sigma_{e,i}$. Because the parameters for the exogenous shocks differ the shocks themselves will and so I have written $z_i$ and $e_i$ to emphasize this (although I could just drop this notation).
+
+Rather than just specifying the number of permanent types as in OLG Model 10. Instead we will given them names by setting $Names\_i=\{'male','female'\}$. We can then use this names to specify where the two permanent types differ. For example we set $Params.gamma\_i.male=0.1$ and $Params.gamma\_i.female=0.1$. Setting up separate grids is done in much the same way (e.g. $vfoptions.z\_grid\_J.male$). Because we specify names for the permanent types the outputs will use the same names (e.g., $V.male$ and $V.female$ are the value functions for male and female households).
+
+
+\subsection{OLG Model 12: Married couple households}
+This example models just one kind of household, a married couple. The married couple faces four earning shocks (a persistent shock and a transitory shock for each spouse) and makes two labor supply decisions (one for each spouse).
+
+We solve a model of a household in which there are two people (e.g., a married household). They make a joint decision about how much each will work. This involves two decisions variables for the two labor supply choices. We will set up each household member to have effective hours shocks that are a combination of one AR(1) persistent shock and one i.i.d. shock, for each person (so two of each for the household). We will also allow for correlation between the persistent shocks of the two household members, and for correlation between the transitory shocks of the two household members. We will also allow different deterministic age-dependent labor efficiency units, $\kappa_j$, for each spouse.
+
+Our household value function now has $z1$ and $e1$ for the first spouse, and $z2$ and $e2$ for the second spouse. We also have $\kappa_{j,1}$ and  $\kappa_{j,2}$. We add a disutility term for each spouses labor supply, but the household has joint consumption.
+\begin{eqnarray*}
+ V(a,z_1,z_2,e_1,e_2,j)&=& \max_{c,aprime,h_1,h_2} \frac{c^{1-\sigma}}{1-\sigma} - \psi \frac{h_1^{1+\eta}}{1+\eta}- \psi \frac{h_2^{1+\eta}}{1+\eta} + (1-s_j)\beta  \mathbb{I}_{(j>=Jr+10)} warmglow(aprime) \\
+ && \quad \quad \quad \quad+ s_j \beta E[V(aprime,z_1prime,z_2prime,e_1prime,e_2prime,j+1)|z_1,z_2] \\
+&& \text{if }j<Jr: \; c+aprime=(1+r)a+w \kappa_{j,1}  z_1 e_1 h_1+w \kappa_{j,2}  z_2 e_2 h_2 \\
+&& \text{if }j>=Jr: \; c+aprime=(1+r)a +pension\\
+&& 0\leq h \leq 1, aprime\geq 0 \\
+&& log([z_1prime; z_2prime])=\rho_{z} log([z_1; z_2]) + \epsilon, \; \epsilon \sim N(0,\Sigma_{\epsilon,z}^2) \\
+&& log([e_1,e_2) \sim N(0,\Sigma_{e}^2)
+\end{eqnarray*}
+Notice that $[z_1,z_2]$ is VAR(1) (in logs) and $[e_1,e_2]$ is i.i.d. normal (in logs).
+
+We are allowing for $z_1$ and $z_2$ to follow a VAR(1) (so both $\rho_z$ and $\Sigma_{\epsilon,z}$ are 2-by-2 matrices). We do not require that $\Sigma_{\epsilon,z}$ be diagonal, so the innovations themselves can be correlated. We similarly allow for $e_1$ and $e_2$ to be correlated (so $\Sigma_{e}$ is not diagonal).
+
+This model demonstrates how to use two decision variables: you need to put them as the first two entries to the ReturnFn and also to all FnsToEvaluate. The model output includes calculating the life-cycle labor supply for each spouse separately, as well as the total household labor supply.
+
+A common variation of the model used in practice would add a fixed cost of working (e.g., $-\mathbb{I}_{h_2>0}*fc$, where $fc$ is a constant) to capture that the second spouse in many households will sometimes supply zero labor.\footnote{Because we have $0\leq h_2 \leq 1$ together with the shape of the utility function it would never be optimal to set $h_2=0$ in the absence of a fixed cost of working non-zero hours.} Note that implementing this is just a simple modification of the ReturnFn.
+
+We will assume that aggregate effective labor is just the sum of the effective labor units of both spouses.
+
+We now write out the definition of stationary general equilibrium in the model.
+\begin{definition}
+ A stationary equilibrium is price $r$ (and $w$), and government policies $\tau$ and $pension$ such that
+ \begin{enumerate}
+  \item Given prices ($r$ and $w$) and government policies ($\tau$, $pension$), the household value functions, $V$, and related policy function, $policy$, solve the household problem.
+  \item The agents distribution evolves according to,
+   \\  $\mu(a_{j+1},z_{1,t+1},z_{2,t+1},e_{1,t+1},e_{2,t+1},j+1)=\int \mathbb{I}_{a_{j+1}=policy_{a'}} \frac{\mu^{j+1}}{\mu^j} d\mu(a,z_1,z_2,e_1,e_2,j) \Gamma(z_{1,t+1},z_{2,t+1}|z_{1,t},z_{2,t}) Pr(\epsilon_{1,t+1},\epsilon_{2,t+1}), \; j=1,2,...,J,\text{ and } \mu(:,:,:,:,:,1)=jequaloneDist$
+  \item The aggregates are based on household policies and agent distribution,
+   \\ $L=\int \kappa_{j,1} exp(\gamma_1+z_1+e_1) policy_{h_1} + \kappa_{j,2} exp(\gamma_2+z_2+e_2) policy_{h_2} d\mu$
+   \\ $K=\int a d\mu$
+   \\ $PensionSpending=\int pension \mathbb{I}_{j\geq Jr} d\mu$
+   \\ $IncomeTaxRevenue=\int (\eta_1+\eta_2*log(Income)*Income) d\mu$
+   \\ $AccidentalBeqLeft= \int policy_{\hat{a}'}(1-s_j) d\mu$
+  \item Labor markets clear: $w=(1-\alpha)A K^{\alpha}L^{-\alpha}$
+   \\ Capital markets clear: $r=\alpha A K^{\alpha-1} L^{1-\alpha} - \delta$
+   \\ Pension system balance: $PensionSpending=\tau*w*L$
+   \\ Government budget balance: $G=IncomeTaxRevenue$
+   \\ Accidental bequest balance: $AccidentBeq=AccidentalBeqLeft/(1+n)$
+ \end{enumerate}
+\end{definition}
+Where the main difference to earlier examples (such as OLG Model 10) is that the household problem is now more complicated, and the definition of the aggregate (effective) labor $L$.
+
+The firm side of the problem and the general equilibrium conditions are all unchanged (although of course the aggregates that go into them as inputs are different).
+
+Obviously there are some limitations to modelling a married couple in this way. One if that they have just one 'age' between the two spouses.
+
+Because the 'size' of the household problem for the married couple is quite large we need to use settings that are slower but require less memory. Hence we set vfoptions.lowmemory=1 and simoptions.parallel=4.\footnote{Code will loop over e, instead of paralleling over e, when solving value function iteration problem, and then use 'sparse matrix on cpu' when doing agent distribution. The point of VFI Toolkit is you don't really need to understand the details of what these mean nor how these work to be able to take advantage of them :)}
+
+\subsection{OLG Model 13: Married Couples, Single Males and Single Females}
+We now consider an economy with three types of household: married couples, single males and single females. The household problem of married couples is exactly as in OLG Model 11, and the household problems of single males and single females are exactly as in OLG Model 12.
+
+So we have the household problem of the married couple given by,
+\begin{eqnarray*}
+ V_m(a,z_1,z_2,e_1,e_2,j)&=& \max_{c,aprime,h_1,h_2} \frac{c^{1-\sigma}}{1-\sigma} - \psi \frac{h_1^{1+\eta}}{1+\eta}- \psi \frac{h_2^{1+\eta}}{1+\eta} + (1-s_j)\beta  \mathbb{I}_{(j>=Jr+10)} warmglow(aprime) \\
+ && \quad \quad \quad \quad+ s_j \beta E[V_m(aprime,z_1prime,z_2prime,e_1prime,e_2prime,j+1)|z_1,z_2] \\
+&& \text{if }j<Jr: \; c+aprime=(1+r)a+w \kappa_{j,1}  z_1 e_1 h_1+w \kappa_{j,2}  z_2 e_2 h_2 \\
+&& \text{if }j>=Jr: \; c+aprime=(1+r)a +pension\\
+&& 0\leq h \leq 1, aprime\geq 0 \\
+&& log([z_1prime; z_2prime])=\rho_{z} log([z_1; z_2]) + \epsilon, \; \epsilon \sim N(0,\Sigma_{\epsilon,z}^2) \\
+&& log([e_1,e_2) \sim N(0,\Sigma_{e}^2)
+\end{eqnarray*}
+Notice that $[z_1,z_2]$ is VAR(1) (in logs) and $[e_1,e_2]$ is i.i.d. normal (in logs). Note that a 'm' subscript has been added to the value function to emphasize that this is for the married couple.
+
+We also have two further household problems for the single male and single female households given by,
+\begin{eqnarray*}
+ V_i(a,z,e,j)&=& \max_{c,h,a'} \frac{c^{1-\sigma}}{1-\sigma} - \psi \frac{h^{1+\eta}}{1+\eta}  + \beta s_j E_{z',e'}[V_i(a',j+1,z',e')|z] \\
+&&\text{if working, }j<=Jr: Income=ra+w* \kappa_{i,j}*exp(\gamma_i+z_i+e_i) h \\
+&&\text{if retired, }j\geq Jr: Income=ra \\
+&& IncomeTax=\eta_1+\eta_2*log(Income)*Income \\
+&&\text{if working, }j<=Jr: c+a'=(1-\tau) w \kappa_{i,j}*exp(\gamma_i+z_i+e_i) h + (1+r) a -IncomeTax +(1+r)AccidentBeq\\
+&&\text{if retired, }j\geq Jr: c+a'=pension+ (1+r) a -IncomeTax +(1+r)AccidentBeq +\mathbb{I}_{j=J} warmglow(a') \\
+&& 0\leq h \leq 1 \\
+&& z_i'=\rho_{z,i} z_i + \epsilon, \quad \epsilon \sim N(0,\sigma_{\epsilon,z,i}^2) \\
+&& e \sim N(0,\sigma_{e,i}^2)
+\end{eqnarray*}
+where $i$ is 'male' or 'female'.
+
+The definition of the stationary equilibrium is essentially just a combination of that from OLG Models 11 and 12 (the sum across permanent types from 11, with the sum across labor supply of both genders from 12). I treat the two single household types as permanent type 1 and 2, and the married couple type as permanent type 3 in this definition.
+\begin{definition}
+ A stationary equilibrium is price $r$ (and $w$), and government policies $\tau$ and $pension$ such that
+ \begin{enumerate}
+  \item Given prices ($r$ and $w$) and government policies ($\tau$, $pension$), the household value functions, $V_i$, and related policy function, $policy_i$, solve the household problem; for each $i=1,...,N\_{}i$.
+  \item The agents distribution evolves according to,
+   \\  $\mu_i(a_{j+1},z_{t+1},e_{t+1},j+1)=\int \mathbb{I}_{a_{j+1}=policy_{i,a'}} \frac{\mu_i^{j+1}}{\mu_i^j} d\mu_i(a,z,e,j) \Gamma(z_{t+1}|z_t) Pr(\epsilon_{t+1}), \; j=1,2,...,J,\text{ and } \mu_i(:,:,:,1)=jequaloneDist \; \text{ for all} i=1,2$
+   \\  $\mu_i(a_{j+1},z_{1,t+1},z_{2,t+1},e_{1,t+1},e_{2,t+1},j+1)=\int \mathbb{I}_{a_{j+1}=policy_{i,a'}} \frac{\mu_i^{j+1}}{\mu_i^j} d\mu_i(a,z_1,e_1,z_2,e_2,j) \Gamma(z_{1,t+1},z_{2,t+1}|z_{1,t},z_{2,t}) Pr(\epsilon_{1,t+1},\epsilon_{2,t+1})), \; j=1,2,...,J,\text{ and } \mu_i(:,:,:,:,:,1)=jequaloneDist \; \text{ for all} i=3$
+  \item The aggregates are based on household policies and agent distribution,
+   \\ $L=\sum_{i=1}^2 \int \kappa_j exp(\gamma_i +z+e) policy_{h,i} d\mu_i + \int [\kappa_{j,1} exp(\gamma_1 +z_1+e_1) policy_{h,i,1} + \kappa_{j,2} exp(\gamma_2 +z_2+e_2) policy_{h,i,2}] d\mu_3$
+   \\ $K=\sum_i \int a d\mu_i$
+   \\ $PensionSpending=\sum_i \int pension \mathbb{I}_{j\geq Jr} d\mu_i$
+   \\ $IncomeTaxRevenue=\sum_i \int (\eta_1+\eta_2*log(Income)*Income) d\mu_i$
+   \\ $AccidentalBeqLeft= \sum_i \int policy_{\hat{a}'}(1-s_j) d\mu_i$
+  \item Labor markets clear: $w=(1-\alpha)A K^{\alpha}L^{-\alpha}$
+   \\ Capital markets clear: $r=\alpha A K^{\alpha-1} L^{1-\alpha} - \delta$
+   \\ Pension system balance: $PensionSpending=\tau*w*L$
+   \\ Government budget balance: $G=IncomeTaxRevenue$
+   \\ Accidental bequest balance: $AccidentBeq=AccidentalBeqLeft/(1+n)$
+ \end{enumerate}
+\end{definition}
+Here we have defined the equilibrium using $N\_i$ which is the three types of household. In the codes we will use $Names\_i$ to make it much easier to keep track of them.
+
+For more on the importance of distinguishing single and married households for macroeconomic aggregates, especially aggregate labor supply, check out \cite*{BorellaDeNardiYang2018}.\footnote{Obviously it is easy enough to extend this further to allow for things like same-sex couples, although it requires a bit more computing power.}
+
+
+\subsection{OLG Model 14: Heterogeneous Firms}
+We now consider an economy with both heterogeneous households and heterogeneous firms. We can do this simply by creating the two as different permanent types of agent, one as the firm and one as the household, similarly to what was done in the previous two models. On the household side the model looks like OLG Model 6, except that we have to replace the 'asset holdings' with 'share holdings' and get rid of the progressive taxes (keeping a flat-rate earnings tax), the reason for these changes is explained below. The model contains a continuum of firms and a continuum of households, for convenience we will normalize the mass of each to 1. Note that we will have finite-lived (OLG) households, and infinitely lived firms.
+
+We begin with the firm problem. Until now we just had a representative firm, and the reason this was possible was the assumption of constant-returns-to-scale.\footnote{Intuitively, with constant-returns-to-scale it is irrelevant if we have one big firm or two firms of half the size each of which uses half the capital and half the labor, constant-returns-to-scale means the total output remains the same, thus we can just replace all the firms with a representative. This can be proved formally.} The representative firm simply rented capital and labor from households each period. To get heterogeneous firms we will switch to firms that have decreasing-returns-to-scale production functions, and which own capital (but still rent labor).\footnote{Actually, when we had the representative firm it is irrelevant whether it was renting the capital or owning the capital, we would get the same thing in both cases \citep*{CarcelesPovedaCoenPirani2010}. We solved the representative firm as renting capital just because it was more convenient.}  Decreasing-returns-to-scale is important as now it is possible for certain allocations of capital across to be more or less efficient than others, and we will also add capital adjustment costs that mean we do not always instantly readjust to the most efficient allocations of capital across firms. The firms are a lightly modified version of \cite{GourioMiao2010}, and captures that firms might fund investment by either internal or external funds.\footnote{Internal means retained profits (or reducing dividends), external is new equity issuance; the model can be extended to distinguish debt and equity as souces of external funding but that requires an additional endogenous state variable.}
+
+The firm problem is,
+\begin{eqnarray*}
+ W(k,z)&=& \max_{d,k',s,l} \left( \frac{1-\tau_d}{1-\tau_{cg}} d  -s \right)+ \frac{1}{1+r/(1-\tau_{cg})} E_{z'}[W(k',z')|z] \\
+ && s + \pi = d + i + \Phi(k,i) + \tau_{corp} T \\
+&& \pi = y -w l \\
+&& y=z k^{\alpha_k} l^{\alpha_l} \\
+&& k'= i+(1-\delta)k \\
+&& \Phi(k,i)=\frac{\varphi}{2} (i/k-\delta)^2 k \\
+&& T= \pi -\delta k - \phi \Phi(k,i) \\
+&& d \geq 0, s \geq 0 \\
+&& log(z)'=\rho_{z} log(z) + \epsilon, \quad \epsilon \sim N(0,\sigma_{\epsilon,z}^2) \\
+\end{eqnarray*}
+where $\pi$ is profit, $y$ is output, $k$ is physical capital, $l$ is labor, $z$ is (idiosyncratic) productivity, $d$ is dividends, $s$ is new equity issuance, $i$ is investment, $\Phi(k,i)$ is capital adjustment cost, $T$ is taxable corporate income, $\tau_{corp}$ is the corporate income tax rate. Note that the production function $y=z k^{\alpha_k} l^{\alpha_l}$ is decreasing returns to scale as long as $\alpha_k+\alpha_l<1$ (and $\alpha_k,\alpha_l>0$). The firm is getting income from new equity issuance and profits (external and internal), $s + \pi$, and uses this to cover expenses of dividends, investment, capital adjustment costs, and tax, $d + i + \Phi(k,i) + \tau_{corp} T$, labor costs being already deducted from profits. The firms differ by both their idiosyncratic productity, $z$, and their physical capital $k$.\footnote{We take advantage of a few observations to solve this problem: the first is that the decision for $l$ is actually static, and we can get a closed-form solution for it from the production function in terms of $w$, $z$ and $k$. The second is that once we choose $k'$ and one of $s$ and $d$, we can just get the other from the conditions, so we actually just have one decision variable and we will arbitrarily use $d$.}
+
+We are now ready to discuss the reasoning for the first change we are going to make to households, namely replacing asset holdings with share holdings. Since there are heterogeneous firms we need to think about who owns them? Keeping track of the ownership between each firm and household would be prohibitively complex, and so we introduce an single 'mutual fund' which owns all firms, and households then own shares in this mutual fund. This will also have the effect of meaning that households face a single risk free return on assets (as the mutual fund will average across all the individual firm returns, and since there are a continuum of firms the return on the mutual fund will equal the mean of those individual firm returns). This is easy enough and from the household perspective mostly just looks like a renaming from asset to share, with a change at the aggregate level that we now want all shares to sum to one in equilibrium.
+
+The household problem is,
+\begin{eqnarray*}
+ V(a,z,e,j)&=& \max_{c,h,a'} \frac{c^{1-\sigma}}{1-\sigma} - \psi \frac{h^{1+\eta}}{1+\eta}  + \beta s_j E_{z',e'}[V(a',j+1,z',e')|z] \\
+&&\text{if working, }j<=Jr: c+P s'=(1-\tau_l) w \kappa_{j}*exp(z+e)*Lhscale* h +((1-\tau_d)D+P0)(s+AccidentBeq) - \tau_{cg}(P0-Plag)(s+AccidentBeq) \\
+&&\text{if retired, }j\geq Jr: c+P s'=pension+((1-\tau_d)D+P0)(s+AccidentBeq) - \tau_{cg}(P0-Plag)(s+AccidentBeq) +\mathbb{I}_{j=J} warmglow(a') \\
+&& 0\leq h \leq 1 \\
+&& z'=\rho_{z} z + \epsilon, \quad \epsilon \sim N(0,\sigma_{\epsilon,z}^2) \\
+&& e \sim N(0,\sigma_{e}^2)
+\end{eqnarray*}
+where $s$ are share holdings (in the mutual fund), $P$ is the price of mutual fund shares ($Plag$ was the price last period), the shares pay out dividends $D$, and the price of shares after paying dividends is $P0$. There is a capital gains tax $\tau_{cg}$ (on capital gain of $P0-Plag$). So the household problem looks very similar to before, except that instead of asset holdings there are share holdings, and instead of paying interest these get a dividend and a capital gain. We can compute the return to shares, denoted $r$ in terms of the dividend and share prices as,
+\begin{equation*}
+ 1+r = \frac{P0 +(1-\tau_d)D - \tau_{cg}(P0-P)}{Plag}
+\end{equation*}
+
+Note that while I have used $z$ for shocks to both the household and firm, these are two totally different $z$ shocks (I should probably change the notation :). This is made very clear in the code where different numbers of grid points are used for each.
+
+What is the purpose of $Lhscale$, the parameter multiplying the labour supply in the household problem? First notice that it makes no meaningful difference to the household as it is just changing the units of the labor productivity process ($\kappa_{j}*exp(z+e)*Lhscale$) which anyway had arbitrary units to begin with. The reason we need this is to ensure that the firm and household sides of the economy are the same 'size'. When we get to the general equilibrium conditions below we still have the same labor market clearance as usual. But there is no reason we should be able to get the labor supply of households to match the labor demand of firms (because both are of different arbitrary sizes; there is not just going to be a wage capable of this). So we need to think about scaling up/down the household labor supply (or firm labor demand) so that the labor market clears (at some wage). This is the purpose of $Lhscale$, we will choose it to get the labor supply of households to equal the labor demand of firms.\footnote{This is the intuition, in practice we will of course choose it joint with the other general equilibrium parameters to jointly satisfy all of the general equilibrium conditions.} But if we use $Lhscale$ to clear the labor market where does that leave the determination of the wage $w$? Notice $r$ and $w$ will determine how much firms prefer capital versus labor in production, so we will use $w$ to target a capital-labor ratio (by adding this capital-labor ratio as another general equilibrium condition).\footnote{Note that we don't need to do this same trick for the capital market clearance because of how we have the capital for firms, but just shares for households. Actually, you can look at the requirement that shares sum to one as a clever way to do exactly this for capital.}
+
+We can now discuss why the progressive taxes have been removed from the model. Our firm is modelled as maximizing its own value.\footnote{Essentially its stock price, but in this model the stock price is purely the fundamental value of the firm.} To be able to maximize its present value it has to discount the future, and we have it do so with the discount factor $\frac{1}{1+r/(1-\tau_{cg})}$ (the firm discounts the future at the rate of return, net of capital gains tax). In principle, we want the firm to value the future at the same marginal rate of substitution of it's shareholders.\footnote{Actually, this is not so obvious. While the idea that the purpose of a firm is to maximize shareholder value is a popular concept it not clear what exactly this means if shareholders are not unanimous, nor is it clear firms actually act this way, or even that this is desirable as a reference (in Germany firms have employee representation, so clearly maximizing shareholder value is not their sole interest). Nonetheless, we here model firms as maximizing shareholder value, and have the firm discount the future at the mean marginal rate of substitution of the shareholders. We have it value the future at the mean MRS of the shareholders, but if they vote then maybe it should be the median MRS, or some other concept of the marginal shareholders MRS. All of this is even before we get to the question of whether this is actually what corporations try to do; there is a large literature on the interests of management vs shareholders, is the CEO really trying to maximize shareholder value, or do they just want to get themselves a private jet?} In the current setup, all shareholders have the same MRS, and so we don't need to calculate it.\footnote{If you take the first-order condition of the household problem you get the same intertemporal consumption Euler eqn for all unconstraint households. While the constrained households are different they are not holding any shares, and as this is the definition of the constraint we can just ignore them.} If we had progressive taxes then shareholders would have different marginal rates of substitution and so we would need to do something else, like calculating the mean of the MRS across shareholders as part of the equilibrium definition. The setup here is borrowed from \cite*{AnagnostopoulosAtesagaogluCarcelesPoveda2022}, and you can find a discussion of this issue of the MRS of shareholders in Section D on page 160-161 of \cite*{FavilukisLudvigsonVanNieuwerburgh2017} who have to deal with MRS changing due to aggregate shocks meaning their firms have a stochastic discount factor.\footnote{One other alternative is to allow firms to invest in each other, in which case they all get the market return as their own discount factor. This is described in \cite*{AnagnostopoulosAtesagaogluCarcelesPoveda2022}, and you can find the math in Section 2.3, pg 7-8, of \cite*{BarroBerkovich2018}.}$^{,\thinspace}$\footnote{We could replace the tax on labor income, $\tau_l$ with a linear tax rate on labor income and interest income. Just needs a slight change in the discount factor, see \cite*{GourioMiao2010}.}
+
+That largely covers the setup, the rest is relatively easy, and we get the definition of the stationary general equilibrium as,
+\begin{definition}
+ A stationary equilibrium is prices $r$, $w$, $P0$ and government policies $\tau$ and $pension$ such that
+ \begin{enumerate}
+  \item Given prices ($r$, $w$, $P0$) and government policies ($\tau$, $pension$), the household value functions, $V$, and related policy function, $policy_h$, solve the household problem.
+  \item Given prices ($r$, $w$, $P0$) and government policies ($\tau$, $pension$), the firm value functions, $W$, and related policy function, $policy_f$, solve the firm problem.
+  \item The agents distribution of households evolves according to,
+   \\  $\mu_h(a_{j+1},z_{t+1},e_{t+1},j+1)=\int \mathbb{I}_{a_{j+1}=policy_{a'}} \frac{\mu_h^{j+1}}{\mu_h^j} d\mu_h(a,z,e,j) \Gamma(z_{t+1}|z_t) Pr(\epsilon_{t+1}), \; j=1,2,...,J,\text{ and } \mu_h(:,:,:,1)=jequaloneDist$
+  \item The agents distribution of firms evolves according to,
+   \\ $\mu_f(k',z')=\int \mathbb{I}_{k'=policy_{k'}} d\mu_f(k,z) \Gamma(z'|z)$
+  \item The aggregates are based on household policies and agent distribution,
+   \\ $L_h=\int \kappa_{j} * exp(z+e)* Lhscale * policy_{h}d\mu_h$
+   \\ $L_f=\int policy_l d\mu_f$
+   \\ $S=\int s d\mu_h$
+   \\ $Dividends=\int policy_{d} d\mu_f$
+   \\ $CapitalGainsTaxRevenue=\int \tau_{cg}(P0-Plag)s d\mu_h$
+   \\ $DividendTaxRevenue=(1-\tau_d) D$
+   \\ $CorporateTaxRevenue=\int \tau_{corp} T d\mu_f$
+  \item Labor markets clear: $L_f=L_h$
+   \\ Share holdings clear: $S=1$
+   \\ Dividends clear: $Dividends=D$
+   \\ Pension system balance: $PensionSpending=\tau_l*w*L$
+   \\ Government budget balance: $G=CapitalGainsTaxRevenue+DividendTaxRevenue+CorporateTaxRevenue$
+   \\ Accidental bequest balance: $AccidentBeq=AccidentalBeqLeft/(1+n)$
+ \end{enumerate}
+\end{definition}
+\noindent note that we do not need to include $P$ in the definition because it is captured by $r$ (given $P0$ and $D$). Because we are looking for a stationary equilibrium we also know that $Plag=P$. Note that for evolution of agent distribution of firms, the $\mu$ on both sides is the same (as this is what stationary distribution involves). Note that many of the market clearance conditions are about making sure that a variable that appears on both the households and firms side takes the same value for both, e.g., $Dividends$ is firms payment of dividends, while $D$ is household receipt of dividends.
+
+Note that when we solve the model we are going to put the capital-labor ratio target alongside these as another general equilibrium condition (see explanation above of why we want this). Note also that we are going to choose $L_h$ as part of statationary equilibrium, I have omitted it from the definition for no particular reason.
+
+The model that we used for heterogeneous firms is far from the only model for heterogeneous firms, in fact it is not even among the most common. If heterogeneous firms is something you are interested in you can find a few example codes (and links to materials explaining how the models work) at:
+\href{https://www.vfitoolkit.com/updates-blog/2020/entry-exit-example-based-on-hopenhayn-rogerson-1993/}{vfitoolkit.com/updates-blog/2020/entry-exit-example-based-on-hopenhayn-rogerson-1993/} (there is also an example, not mentioned in link but available in \href{https://github.com/vfitoolkit/VFItoolkit-matlab-examples/tree/master/FirmEntryExitModels}{the same github repo}, based on \cite*{GourioMiao2010}, which is the model that forms the basis of the heterogeneous firms we have used here in OLG Model 14).
+
+

@@ -1,0 +1,244 @@
+
+\subsection{OLG Model 1: Consumption-Leisure in general equilibrium OLG}
+Households live for J periods and solve the life-cycle problem,
+\begin{eqnarray*}
+ \sum_{j=1}^J \beta^{j-1} && \left[ \frac{c_j^{1-\sigma}}{1-\sigma} - \psi \frac{h_j^{1+\eta}}{1+\eta} \right] \\
+&&\text{if working, }j<=Jr: c_j=(1-\tau) w h_j \\
+&&\text{if retired, }j\geq Jr: c_j=pension \\
+&& 0\leq h_j \leq 1
+\end{eqnarray*}
+where $j$ indexes age, $c_j$ is consumption, $h_j$ is hours worked,\footnote{$h$ is actually 'fraction of time worked', but I will call it hours worked throughout simply as it is easier to think of in this way. $0\leq h \leq 1$ is showing us that this 'fraction of time worked' is from 0 to 1.} $w$ is the wage per hour worked. So a household that works $h_j$ hours receives an hourly wage of $w$, giving them a pre-tax labor income of $w h_j$. Notice that all the parameters are just a single number. $\tau$ is a tax rate applied to labor income (here set to zero, in OLG Model 2 it will be used to fund the pensions). $pension$ is a pension received by retirees (notice that we do not allow retirees a choice about whether or not to work). $Jr$ is the retirement age.
+
+We can rewrite this as a value function problem,
+\begin{eqnarray*}
+ V(j)&=& \max_{c,h} \frac{c^{1-\sigma}}{1-\sigma} - \psi \frac{h^{1+\eta}}{1+\eta}  + \beta V(j+1) \\
+&&\text{if working, }j<=Jr: c=(1-\tau) w h \\
+&&\text{if retired, }j\geq Jr: c=pension \\
+&& 0\leq h \leq 1
+\end{eqnarray*}
+notice that the value function $V$ depends on the age $j$, so households make different decisions (different optimal policies) at different ages. We assume $V(J+1)=0$.\footnote{$V(J+1)$ is effectively the utility received upon dying.} Notice also from the budget constraint that once the household chooses one of $c$ or $h$, it is implicitly choosing the other. The codes take advantage of this to just have one decision of $h$.
+
+The other part we need to add to this model is the firm side of the economy. We will just use the simplest implementation possible, which is an aggregate production function that has decreasing returns to labor,\footnote{A representative firm is possible with constant returns to scale production functions as the distribution across individual firms of production inputs is irrelevant. This is not true when, as here, there are decreasing returns to scale; the distribution of production inputs across firms matters and a representative firm is not possible. Since we plan to switch to a Cobb-Douglas production function with constant returns to scale in the following models we will simply ignore this issue here. For now we simply use this production function and ignore that it cannot represent a market aggregation of individual firms.}
+\begin{equation}
+ Y=L^{1-\alpha}
+\end{equation}
+
+We assume there are perfectly competitive labor markets, and so in general equilibrium it follows that the wage is equal to the marginal product of labor, which gives us the general equilibrium condition,
+\begin{equation}
+ w=(1-\alpha)L^{-\alpha}
+\end{equation}
+The aggregate labor $L$, is calculated by integrating over the hours worked by each of the individual households. We use $\mu$ to denote the distribution of agents, and so $L= \int h d\mu$; we are summing up the hours worked of each household, and $\mu$ is providing the 'weight' for each household type. In this first model $\mu$ will just be the fractions of agents of each age, but it will become more meaningful in later models.
+
+Any OLG model requires us to define how many people there are of each age, which the codes call $mewj$, which is the marginal distribution of $\mu$ of households/agents over age $j$, and to define the state of people when they are born, which the codes call $jequaloneDist$. We will discuss these in later models as they are trivial and uninteresting in this first model where we just set $mewj$ so that there are an equal fraction of the population in each age.
+
+The definition of a stationary equilibrium for this model is,
+\begin{definition}
+ A stationary equilibrium is price $w$,
+ \begin{enumerate}
+  \item Given prices ($w$), the household value function, $V$, and related policy function, $policy$, solve the household problem.
+  \item The agents distribution evolves according to,
+   \\  $\mu(j+1)=\int \mu(j), \; j=1,2,...,J$, and $\mu(1)=jequaloneDist$
+  \item The aggregates are based on household policies and agent distribution,
+   \\  $L=\int policy_h d\mu$
+  \item Markets clear: $w=(1-\alpha)L^{-\alpha}$
+ \end{enumerate}
+\end{definition}
+Notice this first model has no endogenous state in the household problem and so the agent distribution is actually independent of the household policies.
+
+Note also that is is common to include $V$, $policy$, and $L$ in the definition of the stationary equilibrium. I do not do so here mainly to save notation, and because these can anyway always be calculated given the prices and government policies, which is how the codes will work (we find the equilibrium prices and government policies, and then from these can calculate things like $V$, $policy$ and $L$ as desired).
+
+When we come to write the codes we will rewrite the market clearance condition, which is the only general equilibrium condition, as an expression that equals zero in equilibrium. So we write it as $w-(1-\alpha)L^{-\alpha}$ in the codes.
+
+\subsection{OLG Model 2: Use tax to fund pensions}
+The only difference from OLG Model 1 is that we now use the tax, $\tau$ (which was previously equal to zero) to balance the pensions expenditures. This involves adding a general equilibrium condition to determine the tax rate such that the tax revenue raised is equal to the total expenditure on pensions. This shows how we add general equilibrium conditions, and also illustrates how government budget conditions are treated just like any other general equilibrium condition.
+
+Since the household problem is unchanged ($\tau$ was already in OLG Model 1, just that it was set equal to zero), we skip rewriting it here. Same goes for the firm side of the economy and the labor market clearance.
+
+The only other thing we have is the pension system, we will require that the pension system runs a balanced budget, so total revenues raised by the tax rate $\tau$ must equal total spending on the pension. We will require that the pension system has a balanced budget: revenues from the payroll tax equal total spending on pensions for the retirees. In the current model this is easy, we just require $pension*((J-Jr)/J)=\tau*w*L$, where the left-hand side is the total spending on pensions and the right-hand side is the total revenue from payroll tax $\tau$.\footnote{Key to this equation is that we know that $(J-Jr)/J$ is the fraction of the population that is retired and receiving pensions, and that the payroll tax is a flat-rate so we can just multiply it by the tax base $w*L$.}
+
+The definition of a stationary equilibrium for this model is,
+\begin{definition}
+ A stationary equilibrium is price $w$, and government policies $\tau$ and $pension$ such that
+ \begin{enumerate}
+  \item Given prices ($w$) and government policies ($\tau$, $pension$), the household value function, $V$, and related policy function, $policy$, solve the household problem.
+  \item The agents distribution evolves according to,
+   \\  $\mu(j+1)=\int \mu(j), \; j=1,2,...,J$, and $\mu(1)=jequaloneDist$
+  \item The aggregates are based on household policies and agent distribution,
+   \\  $L=\int policy_h d\mu$
+  \item Markets clear: $w=(1-\alpha)L^{-\alpha}$
+  \item Pension system balance: $pension*((J-Jr)/J)=\tau*w*L$
+ \end{enumerate}
+\end{definition}
+Notice this model has no endogenous state in the household problem and so the agent distribution is actually independent of the household policies.
+
+Note also that is is common to include $V$, $policy$, and $L$ in the definition of the stationary equilibrium. I do not do so here mainly to save notation, and because these can anyway always be calculated given the prices and government policies, which is how the codes will work (we find the equilibrium prices and government policies, and then from these can calculate things like $V$, $policy$ and $L$ as desired).
+
+\subsection{OLG Model 3: Dependence on Age}
+We make three extensions to the second model. Our first change is to allow wages to vary with age: we include a deterministic life cycle profile of labor efficiency unit, $\kappa_j$, intended to capture the empirical fact that average wages increase with age until something like 45-55 years old, and then decrease until retirement. Our second change is to include a 'survival probability', so that as people get older they become less likely to survive until the next period/age. Note that this will mean there are less elderly people giving us a more realistic age-demographic. The third is to include population growth at a rate $n$, which also helps us capture population age-demographics.
+
+We will make a small change to the pension system budget balance, rather than fixing pensions and choosing $\tau$ to make the budget balance as in OLG Model 2, we will fix $\tau$ and choose pensions to make the budget balance. Note that the general equilibrium condition relating to the pension system budget balance is unchanged, we just change the name for which variables are to be determined in general equilibrium. We do this solely to illustrate how easily it can be done.
+
+The households problem now reflects these changes,
+\begin{eqnarray*}
+ V(j)&=& \frac{c^{1-\sigma}}{1-\sigma} - \psi \frac{h^{1+\eta}}{1+\eta}  + \beta s_j V(j+1) \\
+&&\text{if working, }j<=Jr: c=(1-\tau) w \kappa_j h \\
+&&\text{if retired, }j\geq Jr: c=pension \\
+&& 0\leq h \leq 1
+\end{eqnarray*}
+The 'age-conditional survival probability' $s_j$ ---the probability of surviving to age $j+1$ given agent is alive at age $j$--- enters alongside the 'discount factor', $\beta$, reflecting that agents only care about next period if they are alive next period. The deterministic labor efficiency age-profile, $\kappa_j$, enters into the earnings $w \kappa_j h_j$, which also changes the interpretation of $w$ which is now the 'wage per efficiency unit hour', rather than just 'wage per hour'; a household's wage per hour is $w \kappa_j$.
+
+There are two important changes to other aspects of the model. The first is that the total labor supply is no longer just adding up hours worked across the households, it now includes the efficiency units, and so the total labor supply is now measured in efficiency units. This gives us,
+\begin{equation*}
+ L=\int \kappa_j h d\mu
+\end{equation*}
+We can also define the total 'hours worked' as $H=\int h d\mu$, note that in this model $h$ is 'fraction of time worked' rather than 'hours', I call it 'hours worked' for convenience.
+
+The second change is that because people have a chance of dying we need to alter how we keep track of how many people there are of each age. We do this using in the code using $mewj$, which is the marginal distribution of $\mu$ over age. If we started with a population mass of 1 at age one, so $\mu^1=1$, then the survival probabilities mean that  $\mu^{j+1}=s_j \mu^j$ for $j=1,2,...,J$. We also have population growth at rate $n$ ($n$ is a percentage as a fraction so, e.g., $n=0.02$ represents 2\% annual population growth rate) so if the population that was age one yesterday equals $1$, then the population that is age one today equals $1*(1+n)$ ---it has grown at rate $n$--- and the population that is age two today is the same mass of $1$ that was age one yesterday (ignoring survival probabilities for the moment); rearranging this we get that if age one today is mass $1$, then age two today is mass $1/(1+n)$. If we apply this logic to the formula we had we still have $\mu^1=1$, but now $\mu^{j+1}=s_j \mu^j/(1+n)$ for $j=1,2,...,J$, and this is the formula used in the codes. We want to keep the total population equal to one to make the model easier to use, and so we then normalize the total population to one.
+
+Some model output that is of interest with this second model is the 'life-cycle profile' of mean hours worked. These are graphs with age on the horiontal axis that show average hours worked for each age. Analagously the life-cycle profile for mean effective labor supply shows average effective labor supply, $\kappa_j h$, for each age. A second model output of interest in this second model is the 'age-demographic', which we here draw as a demographic pyramid.
+
+Notice that while the requirement that the pension system has a balanced budget is conceptually unchanged we do have to modify the exact equation because $(J-Jr)/J$ is no longer the fraction of the population that is retired because of the probability of death/survival. We could just calculate the fraction (it can be directly calculated from the $mewj$) prior to solving the model and put this into our equation. But we will instead take advantage of just how easy it is to implement using the codes and add it as an aggregate to be calculated. This will lead to a minor change to the pension system balance equation.
+
+The main change to the definition of stationary equilibrium is the equation covering how the agents distribution evolves. Note that the value function problem is different, and so $V$ and $policy$ are different, but we don't need to change how we have written this in the equilibrium definition.
+
+The definition of a stationary equilibrium for this model is,
+\begin{definition}
+ A stationary equilibrium is price $w$, and government policies $\tau$ and $pension$ such that
+ \begin{enumerate}
+  \item Given prices ($w$) and government policies ($\tau$, $pension$), the household value function, $V$, and related policy function, $policy$, solve the household problem.
+  \item The agents distribution evolves according to,
+   \\  $\mu(j+1)=\int \frac{\mu^{j+1}}{\mu^j} \mu(j), \; j=1,2,...,J,\text{ and }\mu(1)=jequaloneDist$
+  \item The aggregates are based on household policies and agent distribution,
+   \\ $L=\int \kappa_j policy_h d\mu$
+   \\ $PensionSpending=\int pension \mathbb{I}_{j\geq Jr} d\mu$
+  \item Markets clear: $w=(1-\alpha)L^{-\alpha}$
+   \\ Pension system balance: $PensionSpending=\tau*w*L$
+ \end{enumerate}
+\end{definition}
+\noindent Note the difference between $\mu(j)$ which is the population distribution at age $j$, and $\mu^j$ which is the marginal population distribution at age $j$; in the current model they are identical, but from the next model on they are different. $\mathbb{I}_{j\geq Jr}$ is the indicator function for $j\geq Jr$; that is a function that takes the value 1 when $j\geq Jr$, and zero otherwise.\footnote{More generally, the indicator function $\mathbb{I}_S$ for some condition $S$, is a function that takes a value of 1 when $S$ is true, and $0$ otherwise. It can also/alternatively be defined with $S$ being a set, in which case it takes a value of 1 when in the set $S$, and $0$ outside the set $S$.} Notice then that $\mathbb{I}_{j\geq Jr}$ is taking a value of 0 for working age, and 1 for retirement.
+
+
+\subsection{OLG Model 4: Assets and Aggregate Physical Capital}
+We make the big change of adding assets to the household problem, and these household assets add up to aggregate physical capital which appears in the production function of the representative firm. Because we use a Cobb-Douglas production function the wage and interest rate are isomorphic, that is, one is just a simple function of the other, and vice-versa. We could therefore write the model in terms of either $r$ or $w$, and we switch to writing the model in terms of $r$ simply to follow what is standard in the literature. Because people can die accidentally (due to the survival probabilities already introduced) and have assets when they do we need to do something so these assets don't just 'disappear'; we will redistribute all these assets left by those who die, called 'accidental bequests', as a lump-sum payment to surviving agents, denoted $AccidentBeq$. Empirically, people who die often leave behind substantial assets, whereas people in our model will aim to die with zero assets (the survival probabilities mean they won't be exactly zero, but they will be small), and so we will introduce a 'warm glow of bequest' to make households keep assets until they die; essentially we just give them utility for having assets when they die.
+
+Begin with the household problem which now includes assets, $a$, and which we first write as a sequence problem with a J period life-cycle problem
+\begin{eqnarray*}
+ \sum_{j=1}^J \beta^{j-1} \Pi_{i=1}^{j-1}s_i && \left[ \frac{c_j^{1-\sigma}}{1-\sigma} - \psi \frac{h_j^{1+\eta}}{1+\eta} \right] \\
+&&\text{if working, }j<=Jr: c_j+a_j=(1-\tau) w h_j + (1+r) a_{j-1} +(1+r)AccidentBeq \\
+&&\text{if retired, }j\geq Jr: c_j+a_j=pension+ (1+r) a_{j-1} +(1+r)AccidentBeq + \mathbb{I}_{j=J} warmglow(a') \\
+&& 0\leq h_j \leq 1
+\end{eqnarray*}
+The important thing when we change to value function notation is that the household assets, $a$, is now an 'endogenous state' of the value function (so decisions/optimal policy depend on this state),
+\begin{eqnarray*}
+ V(a,j)&=& \max_{c,h,a'} \frac{c^{1-\sigma}}{1-\sigma} - \psi \frac{h^{1+\eta}}{1+\eta}  + \beta s_j V(a',j+1) \\
+&&\text{if working, }j<=Jr: c+a'=(1-\tau) w \kappa_j h + (1+r) a  +(1+r)AccidentBeq\\
+&&\text{if retired, }j\geq Jr: c+a'=pension+ (1+r) a  +(1+r)AccidentBeq +\mathbb{I}_{j=J} warmglow(a') \\
+&& 0\leq h \leq 1
+\end{eqnarray*}
+So now the value function has one endogenous state, $a$, and the age state $j$, and the household needs policies for both $a'$ and $h$.
+
+The warm glow of bequests, is $\mathbb{I}_{j=J} warmglow(a')$, the first term is and indicator for final periods and is telling us that we only get the warm glow when we die (in last period) and the second part is telling us that the warm glow is a function of the assets that we choose, $a'$, in the final period and so are the assets we have at the end of the final period when we die. We will give the warm glow of bequests the functional form $warmglow(a')=wg_1 \frac{(1+a'/wg_2)^{1-wg_3}}{1-wg_3}$, where $wg_1$ controls the (relative) importance of bequests, $wg_2 \geq 1$ controls the degree to which bequests are a luxury good ($wg_2=1$ would be a normal good, larger $wg_2$ makes bequests more luxury-like so that wealthy households leave proportionally larger bequests), and $wg_3$ is the curvature parameter.\footnote{Notice that you only get the warm-glow if you die at the end of the final period, not if you die in any of the previous periods due to the survival probabilities. We could instead use $\beta (1-s_j)warmglow(a')$ to make it so we get the warm glow of bequest if household dies at any age; note that in this case we must set $s_J=0$. Philosophically this alternative seems nicer, but this is irrelevant in a quantitative model. I am not aware of anything establishing which of the two performs better empirically. I do not use the alternative here solely because it is slightly more subtle to explain.}\textsuperscript{,}\footnote{Notice that the warm-glow function has the same CRRA-style curvature as the utility of consumption (in the codes we set $wg_3=\sigma$). This gives it the same concave shape (increasing utility, decreasing marginal utility) and so it has the standard properties of a CRRA utility function, which makes finding reasonable initial guesses for parameters relatively easy.}
+
+The other main change to this model is the firm side of the economy. We now use a representative firm with a constant-returns-to-scale Cobb-Douglas production function,
+\begin{equation}
+ Y= A K^{\alpha} L^{1-\alpha}
+\end{equation}
+where $A$ is aggregate productivity (which will just be normalized to one, we will want it in a future model). $K$ is aggregate physical capital, and is given by $K=\int a d\mu$. Note that $\mu$ is now a function of both the household states $(a,j)$.
+
+We assume there are competitive capital and labor markets, and so in general equilibrium it follows that the interest rate is equal to the marginal product of capital (net of depreciation\footnote{In the budget constraint we have $(1+r)a$, so the interest rate is net of depreciation and therefore equals the marginal product of capital net of depreciation. We could alternatively have used $(1+r-\delta)a$ in the budget constraint in which case the interest rate would be the gross interest rate and equal to the marginal product of capital. $\delta$ is the depreciation rate.}) and the wage is equal to the marginal product of labor, which gives us the general equilibrium condition,
+\begin{eqnarray*}
+ r=\alpha A K^{\alpha-1} L^{1-\alpha}-\delta \\
+ w=(1-\alpha)A K^{\alpha} L^{-\alpha}
+\end{eqnarray*}
+where still $L= \int \kappa_j h d\mu$.
+
+Because agents are now born with a certain amount of assets we also need to make an assumption about this. We will assume that all agents are born with zero assets, so $\mu(0,1)=1$, and $\mu(a,1)=0$ for all $a \neq 0$. This means we need to change $jequaloneDist$ which represents the distribution of newborns in the codes.
+
+The definition of a stationary equilibrium for this model is now,
+\begin{definition}
+ A stationary equilibrium is price $r$ (and $w$), and government policies $\tau$ and $pension$ such that
+ \begin{enumerate}
+  \item Given prices ($r$ and $w$) and government policies ($\tau$, $pension$), the household value function, $V$, and related policy function, $policy$, solve the household problem.
+  \item The agents distribution evolves according to,
+   \\  $\mu(a_{j+1},j+1)=\int \mathbb{I}_{a_{j+1}=policy_{a'}} \frac{\mu^{j+1}}{\mu^j} d\mu(a_j,j), \; j=1,2,...,J,\text{ and } \mu(:,1)=jequaloneDist$.
+  \item The aggregates are based on household policies and agent distribution,
+   \\ $L=\int \kappa_j policy_h d\mu$
+   \\ $K=\int a d\mu$
+   \\ $PensionSpending=\int pension \mathbb{I}_{j\geq Jr} d\mu$
+  \item Labor markets clear: $w=(1-\alpha)A K^{\alpha}L^{-\alpha}$
+   \\ Capital markets clear: $r=\alpha A K^{\alpha-1} L^{1-\alpha} - \delta$
+   \\ Pension system balance: $PensionSpending=\tau*w*L$
+   \\ Accidental bequest balance: $AccidentBeq=(\int policy_{a'}(1-s_j) d\mu)/(1+n)$
+ \end{enumerate}
+\end{definition}
+\noindent note the difference between $\mu(a,j)$ which is the population distribution at age $j$, and $\mu^j$ which is the marginal population distribution at age $j$; there is now a meaningful difference. Note how the $policy$ for next period household assets now helps determine the evolution of the agent distribution.
+
+Notice that for accidental bequest balance we have equation $AccidentBeq=(\int policy_{a'} (1-s_j) d\mu)/(1+n)$ which has the lump-sum given to households on the left, being equal to the assets of the dying on the right. The scaling by $1/(1+n)$ is due to the population growth that occurs between last period and this period.\footnote{This formula implicitly assumes $s_J=0$.}
+
+\subsection{OLG Model 5: Progressive Taxation and Government Budget Balance}
+We introduce Government in the form of a progressive income tax to raise revenue that is spent on government consumption. As well as including the taxation in the household problem we will also get a new general equilibrium condition relating to the government budget balance. We do not yet have government debt so we simply enforce that the government runs a balanced budget in every period. Introducing government debt is left as an Assignment, see Section \ref{sec:govdebt}.
+
+We will model a progressive income tax, this will involve first defining income, which should be done in accordance with the tax system of the country being modelled. We define $Income=r*a+w*\kappa_j*h$, the sum of capital income and wage earnings, which is close to the definition for income taxes in most countries (note that for retirees $h=0$). We will then use the tax function $IncomeTax=\eta_1+\eta_2*log(Income)*Income$, where $IncomeTax$ is the amount paid by a household with $Income$.\footnote{This functional form is found to have a good empirical fit to the US income tax system by \cite*{GunerKaygusuvVentura2014}. Work on fitting functions for taxation often focuses on 'effective' tax rates, the amount of tax actually paid as a percentage of income, rather than 'statutory' tax rates, what the law says the percentage tax rate is. Effective tax rates have the advantage that the model will reflect how much tax is actually paid, and are a reduced-form way of capturing tax avoidance, e.g., by taking tax-deductions (tax avoidance is used to describe legal ways of paying less tax, illegal ways are called tax evasion). Older work often used the functional form of \cite*{GouveiaStrauss1994,GouveiaStrauss1999}, $IncomeTax = \eta_1 \left[Income-(Income^{-\eta_2}+\eta_3)^{-1/\eta_2}\right]$. Observe that with this functional form $\eta_1$ defines the top (asymptotic) marginal tax rate, while $\eta_2$ and $\eta_3$ control the curvature and initial steepness. In the notation of \cite*{GouveiaStrauss1999} $\eta_1=b$, $\eta_2=p$, $\eta_3=s$. Another functional form that is sometimes used is from \cite*{HeathcoteStoreslettenViolante2014} who use the form: $IncomeTax=Income-\lambda Income^{1-\tau}$, where (1-)$\lambda$ is a parameter controlling the level of taxation and $\tau$ is a parameter controlling the progressivity (this is more normally written as after-tax income equaling $\lambda Income^{1-\tau}$).}
+
+We just model government spending as government consumption, which is indistinguishable from private consumption in this model. There are plenty of alternatives, such as adding a 'public capital' term to the production function, which provide a more explicit purpose to government spending, or to model public sector employment. We here stick with a simple government consumption setting purely for ease of exposition; it allows us to add government without having to make any other substantial changes to our model.\footnote{Note that in the current model there is no 'point' to the Government spending and so the efficient level of government spending would be zero. We can think of it as satisfying some unmodelled purpose, and so we just set it exogenously to some level. The alternative would be to modify the model to create an explicit purpose for government spending, such as some form of social insurance or public capital.}
+
+We need some way to decide 'how big' government should be. We could do this by making sure that the ratio of government revenues to GDP is the same in the model as it is empirically, or to do the same thing but for government spending. But because our model includes just a part of what constitutes government as a whole we won't do this as it would lead to a model with a tiny government. Instead we will do this be deciding how much government spending to have, and then determine taxation to balance the government budget constraint. We do this by setting a target for government consumption as a fraction of GDP, called $GdivYtarget$. We then set $\eta_1$ in general equilibrium to get income tax revenue to be the amount that balances the government budget.\footnote{This will 'sacrifice' the accuracy of the tax rates at the household level, but since our model does not have a realistic income distribution, something we will discuss in a later model, we cannot have both accurate effective tax rates and accurate total tax revenues.}
+
+So our household problem is now modified to include the progressive income tax
+\begin{eqnarray*}
+ V(a,j)&=& \max_{c,h,a'} \frac{c^{1-\sigma}}{1-\sigma} - \psi \frac{h^{1+\eta}}{1+\eta}  + \beta s_j V(a',j+1) \\
+&&\text{if working, }j<=Jr: Income=ra+w \kappa_j h \\
+&&\text{if retired, }j\geq Jr: Income=ra \\
+&& IncomeTax=\eta_1+\eta_2*log(Income)*Income \\
+&&\text{if working, }j<=Jr: c+a'=(1-\tau) w \kappa_j h + (1+r) a -IncomeTax +(1+r)AccidentBeq\\
+&&\text{if retired, }j\geq Jr: c+a'=pension+ (1+r) a -IncomeTax +(1+r)AccidentBeq +\mathbb{I}_{j=J} warmglow(a') \\
+&& 0\leq h \leq 1
+\end{eqnarray*}
+Notice that payroll tax is paid on 'pre-income-tax' labor earnings, whether this is appropriate depends on details of the tax system being modelled.
+
+We also need to define the tax revenue as,
+\begin{equation*}
+ IncomeTaxRevenue=\int (\eta_1+\eta_2*log(Income)*Income) d\mu
+\end{equation*}
+where $Income$ is as defined above and depends both on the household state (through age (working/retired) and assets) and policies (through hours worked).
+
+The government budget balance is then given by,
+\begin{equation*}
+ G=IncomeTaxRevenue
+\end{equation*}
+notice that we are modelling the pensions and the rest of Government as two separate budgets. Whether this is appropriate depends on the country being modelled.
+
+The definition of a stationary equilibrium for this model is now,
+\begin{definition}
+ A stationary equilibrium is price $r$ (and $w$), and government policies $\tau$ and $pension$ such that
+ \begin{enumerate}
+  \item Given prices ($r$ and $w$) and government policies ($\tau$, $pension$), the household value function, $V$, and related policy function, $policy$, solve the household problem.
+  \item The agents distribution evolves according to,
+   \\  $\mu(a_{j+1},j+1)=\int \mathbb{I}_{a_{j+1}=policy_{a'}} \frac{\mu^{j+1}}{\mu^j} d\mu(a_j,j), \; j=1,2,...,J,\text{ and } \mu(:,1)=jequaloneDist$.
+  \item The aggregates are based on household policies and agent distribution,
+   \\ $L=\int \kappa_j policy_h d\mu$
+   \\ $K=\int a d\mu$
+   \\ $PensionSpending=\int pension \mathbb{I}_{j\geq Jr} d\mu$
+   \\ $IncomeTaxRevenue=\int (\eta_1+\eta_2*log(Income)*Income) d\mu$
+  \item Labor markets clear: $w=(1-\alpha)A K^{\alpha}L^{-\alpha}$
+   \\ Capital markets clear: $r=\alpha A K^{\alpha-1} L^{1-\alpha} - \delta$
+   \\ Pension system balance: $PensionSpending=\tau*w*L$
+   \\ Government budget balance: $G=IncomeTaxRevenue$
+   \\ Accidental bequest balance: $AccidentBeq=(\int policy_{a'}(1-s_j) d\mu)/(1+n)$
+ \end{enumerate}
+\end{definition}
+\noindent note that we have added an aggregate and a general equilibrium condition, and that the household problem is slightly different.\footnote{When implementing we need to substitute for $Income$ with its expression in terms of the household variables (see the household problem), as otherwise the integral over the agent distribution does not make sense. I do not do so here purely because otherwise the equation gets a bit messy.}
+
+We also need to enforce the condition that government consumption as a fraction of GDP is equal to $GdivYtarget$, and the easiest way is to include this as another general equilibrium condition.\footnote{That $G=GdivYtarget*Y$.} We do this in the codes. 
+
+\subsubsection{Assignment 1: Introduce Government Debt} \label{sec:govdebt}
+Assignment 1 is to introduce government debt into OLG Model 5. You will need to create a parameter, call it $B$, which is the amount of government debt (b for bonds). The key insight is that total household assets are no longer equal to aggregate capital, as households will own both capital and the government debt in the form of bonds. So you need to make it so that the aggregate assets held by households is now called something else, e.g. Assets, and modify the FnsToEvaluate appropriately. Notice that then $K=Assets-B$ and you can just replace $K$ with $Assets-B$ in any relevant general equilibrium conditions. You will also need to modify the government budget constraint to include the interest expenses on the debt, so the Government budget balance becomes $G+r*B=IncomeTaxRevenue$.
+
+The assignment is to take the OLG Model 5 codes and modify them to do this. You need to create the parameter for $B$, and make a small modification to the FnsToEvaluate (change from $K$ to $Assets$), and make a few changes to the general equilibrium conditions. You also need to slightly modify the model output that is being reported so that the concepts are what they say they are. (To check how you do a code implementing this is provided in the Assignments folder that you can use to compare to your own version.)
+
+
+
+
+
+
+

@@ -54,7 +54,7 @@ figure_c=0; % I like to use a counter for the figures. Makes it easier to keep t
 Params.beta = 0.99;
 % Preferences
 Params.sigma = 2; % Coeff of relative risk aversion (curvature of consumption)
-Params.eta = 1.5; % Curvature of leisure (This will end up being 1/Frisch elasty)
+Params.eta = 1.5; % Curvature of leisure (This will end up being 1/Frisch elasticity)
 Params.psi = 10; % Weight on leisure
 
 Params.A=1; % Aggregate TFP. Not actually used anywhere.
@@ -66,7 +66,7 @@ Params.delta = 0.1; % Depreciation rate of capital
 Params.Jr=67-Params.agejshifter; % Retirement age is 67 (remember j=1 is age 20) (You work when younger, not working from Jr on)
 Params.agej=(1:1:Params.J)'; % Current 'j' age, so can check when you retire.
 % Population growth rate
-Params.n=0.02; % percentage rate (expressed as fraction) at which population growths
+Params.n=0.02; % percentage rate (expressed as fraction) at which population grows
 
 % Conditional survival probabilities: sj is the probability of surviving to be age j+1, given alive at age j
 % Most countries have calculations of these (as they are used by the government departments that oversee pensions)
@@ -116,7 +116,7 @@ DiscountFactorParamNames={'beta','sj'};
 ReturnFn=@(h,aprime,a,agej,w,sigma,psi,eta,Jr,pension,tau,kappa_j)...
     OLGModel3_ReturnFn(h,aprime,a,agej,w,sigma,psi,eta,Jr,pension,tau,kappa_j);
 
-%% Now solve the value function iteration problem, just to check that things are working before we go to General Equilbrium
+%% Now solve the value function iteration problem, just to check that things are working before we go to General Equilibrium
 disp('Test ValueFnIter')
 vfoptions=struct(); % Just using the defaults.
 tic;
@@ -175,13 +175,13 @@ FnsToEvaluate.PensionSpending = @(h,aprime,a,pension,agej,Jr) (agej>=Jr)*pension
 % calculate pension spending. We could essentially pre-calculate it (it only depends on
 % mewj and on pension), but because of how the toolkit works it is just as simple to just get the code to do it for us.
 
-% General Equilibrium conditions (these should evaluate to zero in general equilbrium)
+% General Equilibrium conditions (these should evaluate to zero in general equilibrium)
 GeneralEqmEqns.labormarket = @(w,alpha,L,A) w-(1-alpha)*A*L^(-alpha); % wage equals marginal product of labour
 GeneralEqmEqns.pensions = @(PensionSpending,tau,w,L) PensionSpending-tau*w*L; % Retirement benefits equal Payroll tax revenue: pension*fractionretired-tau*w*H
 
 %% Test
-disp('Test AggVars')
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid);
+disp('Test AllStats')
+AllStats=EvalFnOnAgentDist_AllStats_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid);
 
 %% Solve for the General Equilibrium
 

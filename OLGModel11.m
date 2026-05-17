@@ -48,6 +48,14 @@ n_a=301; % Endogenous asset holdings
 n_z=15; % AR(1) with age-dependent params
 vfoptions.n_e=3; % iid
 N_j=Params.J; % Number of periods in finite horizon
+
+%% Divide-and-conquer and grid interpolation layer
+vfoptions.divideandconquer=1; % turn on divide-and-conquer
+vfoptions.gridinterplayer=1; % turn on grid interpolation layer
+vfoptions.ngridinterp=20; % 20 evenly-spaced points between each pair of consecutive a_grid points
+simoptions.gridinterplayer=vfoptions.gridinterplayer; % grid interpolation layer must also be set in simoptions
+simoptions.ngridinterp=vfoptions.ngridinterp;
+
 Names_i={'male','female'}; % Number of permanent types
 
 figure_c=0; % I like to use a counter for the figures. Makes it easier to keep track of them when editing.
@@ -58,7 +66,7 @@ figure_c=0; % I like to use a counter for the figures. Makes it easier to keep t
 Params.beta = 0.96;
 % Preferences
 Params.sigma = 2; % Coeff of relative risk aversion (curvature of consumption)
-Params.eta = 1.5; % Curvature of leisure (This will end up being 1/Frisch elasty)
+Params.eta = 1.5; % Curvature of leisure (This will end up being 1/Frisch elasticity)
 Params.psi = 10; % Weight on leisure
 
 Params.A=1; % Aggregate TFP. Not actually used anywhere.
@@ -70,7 +78,7 @@ Params.delta = 0.1; % Depreciation rate of capital
 Params.agej=1:1:Params.J; % Is a vector of all the agej: 1,2,3,...,J
 Params.Jr=46;
 % Population growth rate
-Params.n=0.02; % percentage rate (expressed as fraction) at which population growths
+Params.n=0.02; % percentage rate (expressed as fraction) at which population grows
 
 % Fixed effect
 Params.gamma_i.male=0.1;
@@ -117,10 +125,10 @@ Params.dj=[0.006879, 0.000463, 0.000307, 0.000220, 0.000184, 0.000172, 0.000160,
 Params.sj=1-Params.dj(21:101); % Conditional survival probabilities
 Params.sj(end)=0; % In the present model the last period (j=J) value of sj is actually irrelevant
 
-% Warm glow of bequestz_grid
-Params.warmglow1=0.3; % (relative) importance of bequests
-Params.warmglow2=3; % bliss point of bequests (essentially, the target amount)
-Params.warmglow3=Params.sigma; % By using the same curvature as the utility of consumption it makes it much easier to guess appropraite parameter values for the warm glow
+% Warm glow of bequest
+Params.wg1=0.3; % (relative) importance of bequests
+Params.wg2=3; % degree to which bequests are a luxury good (>=1; =1 would be a normal good)
+Params.wg3=Params.sigma; % By using the same curvature as the utility of consumption it makes it much easier to guess appropriate parameter values for the warm glow
 
 % Taxes
 Params.tau = 0.15; % Tax rate on labour income
@@ -183,10 +191,10 @@ PTypeDistParamNames={'gamma_dist'};
 DiscountFactorParamNames={'beta','sj'};
 
 % Notice we use 'OLGModel10_ReturnFn'
-ReturnFn=@(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,gamma_i,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau)...
-    OLGModel10_ReturnFn(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,gamma_i,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau);
+ReturnFn=@(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,gamma_i,wg1,wg2,wg3,AccidentBeq, eta1,eta2,tau)...
+    OLGModel10_ReturnFn(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,gamma_i,wg1,wg2,wg3,AccidentBeq, eta1,eta2,tau);
 
-%% Now solve the value function iteration problem, just to check that things are working before we go to General Equilbrium
+%% Now solve the value function iteration problem, just to check that things are working before we go to General Equilibrium
 disp('Test ValueFnIter')
 tic;
 [V, Policy]=ValueFnIter_Case1_FHorz_PType(n_d,n_a,n_z,N_j,Names_i, d_grid, a_grid, z_grid_J, pi_z_J, ReturnFn, Params, DiscountFactorParamNames, vfoptions);
@@ -231,18 +239,18 @@ FnsToEvaluate.AccidentalBeqLeft = @(h,aprime,a,z,e,sj) aprime*(1-sj); % Accident
 FnsToEvaluate.IncomeTaxRevenue = @(h,aprime,a,z,e,eta1,eta2,kappa_j,gamma_i,r,delta,alpha,A,agej,Jr)...
     OLGModel10_ProgressiveIncomeTaxFn(h,aprime,a,z,e,eta1,eta2,kappa_j,gamma_i,r,delta,alpha,A,agej,Jr); % Revenue raised by the progressive income tax (needed own function to avoid log(0) causing problems)
 
-% General Equilibrium conditions (these should evaluate to zero in general equilbrium)
+% General Equilibrium conditions (these should evaluate to zero in general equilibrium)
 GeneralEqmEqns.capitalmarket = @(r,K,L,alpha,delta,A) r-alpha*A*(K^(alpha-1))*(L^(1-alpha)); % interest rate equals marginal product of capital net of depreciation
 GeneralEqmEqns.pensions = @(PensionSpending,tau,L,r,A,alpha,delta) PensionSpending-tau*(A*(1-alpha)*((r+delta)/(alpha*A))^(alpha/(alpha-1)))*L; % Retirement benefits equal Payroll tax revenue: pension*fractionretired-tau*w*H
 GeneralEqmEqns.bequests = @(AccidentalBeqLeft,AccidentBeq,n) AccidentalBeqLeft/(1+n)-AccidentBeq; % Accidental bequests received equal accidental bequests left
 GeneralEqmEqns.Gtarget = @(G,GdivYtarget,A,K,L,alpha) G-GdivYtarget*(A*K^(alpha)*(L^(1-alpha))); % G is equal to the target, GdivYtarget*Y
-GeneralEqmEqns.govbudget = @(G,IncomeTaxRevenue) G-IncomeTaxRevenue; % Government budget balances (note that pensions are a seperate budget)
+GeneralEqmEqns.govbudget = @(G,IncomeTaxRevenue) G-IncomeTaxRevenue; % Government budget balances (note that pensions are a separate budget)
 % Note: the pensions general eqm condition looks more complicated just because we replaced w with the formula for w in terms of r. It is actually just the same formula as before.
 
 %% Test
 % Note: Because we used simoptions we must include this as an input
-disp('Test AggVars')
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j,Names_i, d_grid, a_grid, z_grid_J,simoptions);
+disp('Test AllStats')
+AllStats=EvalFnOnAgentDist_AllStats_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j,Names_i, d_grid, a_grid, z_grid_J,simoptions);
 
 %% Solve for the General Equilibrium
 heteroagentoptions.verbose=1;
@@ -261,7 +269,7 @@ StationaryDist=StationaryDist_Case1_FHorz_PType(jequaloneDist,AgeWeightsParamNam
 % Can just use the same FnsToEvaluate as before.
 AgeConditionalStats=LifeCycleProfiles_FHorz_Case1_PType(StationaryDist,Policy,FnsToEvaluate,Params,n_d,n_a,n_z,N_j,Names_i,d_grid,a_grid,z_grid_J,simoptions);
 
-%% Plot the life cycle profiles of capital and labour for the inital and final eqm.
+%% Plot the life cycle profiles of capital and labour for the initial and final eqm.
 % Note that there is the mean, and also those for each agent type
 % VFI Toolkit automatically gives them names ptype001, ptype002, etc.
 
@@ -290,10 +298,10 @@ title('Life Cycle Profile: Assets')
 FnsToEvaluate.Consumption=@(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,gamma_i,alpha,delta,A,eta1,eta2,AccidentBeq)...
     OLGModel10_ConsumptionFn(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,gamma_i,alpha,delta,A,eta1,eta2,AccidentBeq);
 
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j, Names_i, d_grid, a_grid, z_grid_J,simoptions);
+AllStats=EvalFnOnAgentDist_AllStats_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j, Names_i, d_grid, a_grid, z_grid_J,simoptions);
 
 % GDP
-Y=Params.A*(AggVars.K.Mean^Params.alpha)*(AggVars.L.Mean^(1-Params.alpha));
+Y=Params.A*(AllStats.K.Mean^Params.alpha)*(AllStats.L.Mean^(1-Params.alpha));
 
 % wage (note that this is calculation is only valid because we have Cobb-Douglas production function and are looking at a stationary general equilibrium)
 KdivL=((Params.r+Params.delta)/(Params.alpha*Params.A))^(1/(Params.alpha-1));
@@ -301,9 +309,9 @@ w=Params.A*(1-Params.alpha)*(KdivL^Params.alpha); % wage rate (per effective lab
 
 fprintf('Following are some aggregates of the model economy: \n')
 fprintf('Output: Y=%8.2f \n',Y)
-fprintf('Capital-Output ratio: K/Y=%8.2f \n',AggVars.K.Mean/Y)
-fprintf('Consumption-Output ratio: C/Y=%8.2f \n',AggVars.Consumption.Mean/Y)
-fprintf('Average labor productivity: Y/H=%8.2f \n', Y/AggVars.H.Mean)
+fprintf('Capital-Output ratio: K/Y=%8.2f \n',AllStats.K.Mean/Y)
+fprintf('Consumption-Output ratio: C/Y=%8.2f \n',AllStats.Consumption.Mean/Y)
+fprintf('Average labor productivity: Y/H=%8.2f \n', Y/AllStats.H.Mean)
 fprintf('Government-to-Output ratio: G/Y=%8.2f \n', Params.G/Y)
 fprintf('Accidental Bequests as fraction of GDP: %8.2f \n',Params.AccidentBeq/Y)
 fprintf('Wage: w=%8.2f \n',w)

@@ -2,7 +2,7 @@
 % We can essentially just think of households and firms as two different
 % permanent types of agents (the household problem is finite horizon, while the 
 % firm problem is infinite horizon, but this is fine). Obviously a bunch of
-% things related to how we set up the general equilbrium change.
+% things related to how we set up the general equilibrium change.
 
 Names_i={'household','firm'};
 PTypeDistParamNames={'ptypemass'};
@@ -13,15 +13,15 @@ Params.ptypemass=[1,1]; % Mass of households and firms are each equal to one
 addpath(genpath('./MatlabToolkits/'))
 
 %% Begin setting up to use VFI Toolkit to solve
-% The user can experiment with gridinterplayer=0 (pure discretization) or gridinterplayer=1 (linear interpolation b/w grid points).
-% If gridinterplayer=1, then you must set vfoptions.divideandconquer=1 (required for transition).
-vfoptions.gridinterplayer  = 0;
-vfoptions.ngridinterp      = 20;
-vfoptions.divideandconquer.household = 1;
+
+%% Divide-and-conquer and grid interpolation layer
+vfoptions.divideandconquer.household = 1; % turn on divide-and-conquer (household only; firm problem is not standard endogenous state)
 vfoptions.divideandconquer.firm = 0;
-vfoptions.level1n=11;
-simoptions.gridinterplayer = vfoptions.gridinterplayer;
-simoptions.ngridinterp     = vfoptions.ngridinterp;
+vfoptions.gridinterplayer = 1; % turn on grid interpolation layer
+vfoptions.ngridinterp = 20; % 20 evenly-spaced points between each pair of consecutive a_grid points
+vfoptions.level1n = 11;
+simoptions.gridinterplayer = vfoptions.gridinterplayer; % grid interpolation layer must also be set in simoptions
+simoptions.ngridinterp = vfoptions.ngridinterp;
 
 % Grid sizes to use for household
 
@@ -51,14 +51,14 @@ Params.r=0.05;
 Params.beta = 0.95; % Changed to get S to increase nearer to 1 given r=0.05 (ran it with beta=0.99, got S=0.3, so increased this; note that it interacts with sj to give the actual discount factor)
 % Preferences
 Params.sigma = 2; % Coeff of relative risk aversion (curvature of consumption)
-Params.eta = 1.5; % Curvature of leisure (This will end up being 1/Frisch elasty)
+Params.eta = 1.5; % Curvature of leisure (This will end up being 1/Frisch elasticity)
 Params.psi = 2; % Weight on leisure
 
 % Demographics
 Params.agej=1:1:Params.J; % Is a vector of all the agej: 1,2,3,...,J
 Params.Jr=46;
 % Population growth rate
-Params.n=0.02; % percentage rate (expressed as fraction) at which population growths
+Params.n=0.02; % percentage rate (expressed as fraction) at which population grows
 
 % Age-dependent labor productivity units
 Params.kappa_j=[linspace(0.5,2,Params.Jr-15),linspace(2,1,14),zeros(1,Params.J-Params.Jr+1)];
@@ -94,9 +94,9 @@ Params.sj=1-Params.dj(21:101); % Conditional survival probabilities
 Params.sj(end)=0; % In the present model the last period (j=J) value of sj is actually irrelevant
 
 % Warm glow of bequest
-Params.warmglow1=0.3; % (relative) importance of bequests
-Params.warmglow2=3; % bliss point of bequests (essentially, the target amount)
-Params.warmglow3=Params.sigma; % By using the same curvature as the utility of consumption it makes it much easier to guess appropraite parameter values for the warm glow
+Params.wg1=0.3; % (relative) importance of bequests
+Params.wg2=3; % degree to which bequests are a luxury good (>=1; =1 would be a normal good)
+Params.wg3=Params.sigma; % By using the same curvature as the utility of consumption it makes it much easier to guess appropriate parameter values for the warm glow
 
 % Taxes
 Params.tau_l = 0.2; % Tax rate on labour income
@@ -184,8 +184,8 @@ z_grid.firm=exp(z_grid.firm);
 % For households
 DiscountFactorParamNames.household={'beta','sj'};
 % Notice we use 'OLGModel14_HouseholdReturnFn'
-ReturnFn.household=@(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,r,tau_l,tau_d,tau_cg)...
-    OLGModel14_HouseholdReturnFn(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,r,tau_l,tau_d,tau_cg);
+ReturnFn.household=@(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,wg1,wg2,wg3,AccidentBeq,r,tau_l,tau_d,tau_cg)...
+    OLGModel14_HouseholdReturnFn(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,wg1,wg2,wg3,AccidentBeq,r,tau_l,tau_d,tau_cg);
 
 % For firms
 DiscountFactorParamNames.firm={'firmbeta'};
@@ -193,11 +193,11 @@ DiscountFactorParamNames.firm={'firmbeta'};
 ReturnFn.firm=@(d,kprime,k,z,w,D,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_d,tau_cg)...
     OLGModel14_FirmReturnFn(d,kprime,k,z,w,D,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi,tau_d,tau_cg);
 
-%% Now solve the value function iteration problem, just to check that things are working before we go to General Equilbrium
+%% Now solve the value function iteration problem, just to check that things are working before we go to General Equilibrium
 disp('Test ValueFnIter')
 tic;
 % Note: z_grid and pi_z, this will be ignored due to presence of vfoptions.z_grid_J and vfoptions.pi_z_J
-[V, Policy]=ValueFnIter_Case1_FHorz_PType(n_d,n_a,n_z,N_j,Names_i, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, vfoptions);
+[V, Policy]=ValueFnIter_MixHorz_PType(n_d,n_a,n_z,N_j,Names_i, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, vfoptions);
 toc
 
 %% Initial distribution of agents at birth (j=1)
@@ -221,7 +221,7 @@ AgeWeightsParamNames={'mewj'}; % So VFI Toolkit knows which parameter is the mas
 
 %% Test
 disp('Test StationaryDist')
-StationaryDist=StationaryDist_Case1_FHorz_PType(jequaloneDist,AgeWeightsParamNames,PTypeDistParamNames,Policy,n_d,n_a,n_z,N_j,Names_i,pi_z,Params,simoptions);
+StationaryDist=StationaryDist_MixHorz_PType(jequaloneDist,AgeWeightsParamNames,PTypeDistParamNames,Policy,n_d,n_a,n_z,N_j,Names_i,pi_z,Params,simoptions);
 
 %% General eqm variables
 GEPriceParamNames={'pension','AccidentBeq','G','w','firmbeta','D','P0'}; 
@@ -253,7 +253,7 @@ FnsToEvaluate.DividendPaid.firm = @(d,kprime,k,z,w) d; % dividend paid by firm
 FnsToEvaluate.Sissued.firm = @(d,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi) OLGModel14_FirmShareIssuance(d,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi); % Share issuance
 FnsToEvaluate.CorpTaxRevenue.firm = @(d,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi) OLGModel14_FirmCorporateTaxRevenue(d,kprime,k,z,w,delta,alpha_k,alpha_l,capadjconstant,tau_corp,phi); % revenue from the corporate profits tax
 
-% General Equilibrium conditions (these should evaluate to zero in general equilbrium)
+% General Equilibrium conditions (these should evaluate to zero in general equilibrium)
 GeneralEqmEqns.sharemarket = @(S) S-1; % mass of all shares equals one
 GeneralEqmEqns.labormarket = @(L_h,L_f) L_h-L_f; % labor supply of households equals labor demand of firms
 GeneralEqmEqns.pensions = @(PensionSpending,PayrollTaxRevenue) PensionSpending-PayrollTaxRevenue; % Retirement benefits equal Payroll tax revenue: pension*fractionretired-tau*w*H
@@ -266,26 +266,26 @@ GeneralEqmEqns.CapitalOutputRatio =@(K,L_f,TargetKdivL) K/L_f-TargetKdivL;
 
 %% Test
 % Note: Because we used simoptions we must include this as an input
-disp('Test AggVars')
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j,Names_i, d_grid, a_grid, z_grid,simoptions);
+disp('Test AllStats')
+AllStats=EvalFnOnAgentDist_AllStats_MixHorz_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j,Names_i, d_grid, a_grid, z_grid,simoptions);
 
 % Next few lines were used to try a few parameter values so as to get a
-% decent initial guess before actually solving the general equilbrium
+% decent initial guess before actually solving the general equilibrium
 fprintf('Check: L_h, L_f, K \n')
-[AggVars.L_h.Mean,AggVars.L_f.Mean,AggVars.K.Mean]
+[AllStats.L_h.Mean,AllStats.L_f.Mean,AllStats.K.Mean]
 fprintf('Check: K/L_f (should be about 2.03) \n')
-AggVars.K.Mean/AggVars.L_f.Mean
+AllStats.K.Mean/AllStats.L_f.Mean
 fprintf('Check: S \n')
-AggVars.S.Mean
+AllStats.S.Mean
 fprintf('Check: ShareIssuance GE condition \n')
-Params.P0-((((1-Params.tau_cg)*Params.P0 + (1-Params.tau_d)*Params.D)/(1+Params.r-Params.tau_cg))-AggVars.S.Mean)
+Params.P0-((((1-Params.tau_cg)*Params.P0 + (1-Params.tau_d)*Params.D)/(1+Params.r-Params.tau_cg))-AllStats.S.Mean)
 
 
 %% Solve for the General Equilibrium
 % heteroagentoptions.fminalgo=4 % CMA-ES algorithm 
 
 heteroagentoptions.verbose=1;
-p_eqm=HeteroAgentStationaryEqm_Case1_FHorz_PType(n_d, n_a, n_z, N_j, Names_i, [], pi_z, d_grid, a_grid, z_grid,jequaloneDist, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, AgeWeightsParamNames, PTypeDistParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
+p_eqm=HeteroAgentStationaryEqm_MixHorz_PType(n_d, n_a, n_z, N_j, Names_i, [], pi_z, d_grid, a_grid, z_grid,jequaloneDist, ReturnFn, FnsToEvaluate, GeneralEqmEqns, Params, DiscountFactorParamNames, AgeWeightsParamNames, PTypeDistParamNames, GEPriceParamNames,heteroagentoptions, simoptions, vfoptions);
 % p_eqm contains the general equilibrium parameter values
 % Put this into Params so we can calculate things about the initial equilibrium
 Params.pension=p_eqm.pension;
@@ -297,12 +297,12 @@ Params.D=p_eqm.D;
 Params.P0=p_eqm.P0;
 
 % Calculate a few things related to the general equilibrium.
-[V, Policy]=ValueFnIter_Case1_FHorz_PType(n_d,n_a,n_z,N_j, Names_i, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, vfoptions);
-StationaryDist=StationaryDist_Case1_FHorz_PType(jequaloneDist,AgeWeightsParamNames,PTypeDistParamNames,Policy,n_d,n_a,n_z,N_j,Names_i,pi_z,Params,simoptions);
+[V, Policy]=ValueFnIter_MixHorz_PType(n_d,n_a,n_z,N_j, Names_i, d_grid, a_grid, z_grid, pi_z, ReturnFn, Params, DiscountFactorParamNames, vfoptions);
+StationaryDist=StationaryDist_MixHorz_PType(jequaloneDist,AgeWeightsParamNames,PTypeDistParamNames,Policy,n_d,n_a,n_z,N_j,Names_i,pi_z,Params,simoptions);
 % Can just use the same FnsToEvaluate as before.
-AgeConditionalStats=LifeCycleProfiles_FHorz_Case1_PType(StationaryDist,Policy,FnsToEvaluate,Params,n_d,n_a,n_z,N_j,Names_i,d_grid,a_grid,z_grid,simoptions);
+AgeConditionalStats=LifeCycleProfiles_MixHorz_PType(StationaryDist,Policy,FnsToEvaluate,Params,n_d,n_a,n_z,N_j,Names_i,d_grid,a_grid,z_grid,simoptions);
 
-%% Plot the life cycle profiles of capital and labour for the inital and final eqm.
+%% Plot the life cycle profiles of capital and labour for the initial and final eqm.
 
 figure(1)
 subplot(2,1,1); plot(1:1:Params.J,AgeConditionalStats.L_h.Mean)
@@ -317,14 +317,14 @@ title('Life Cycle Profile: Share holdings')
 FnsToEvaluate.Consumption.household=@(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg) OLGModel14_HouseholdConsumptionFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg);
 FnsToEvaluate.Income.household=@(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg) OLGModel14_HouseholdIncomeFn(h,sprime,s,z,e,agej,Jr,pension,w,P0,D,kappa_j,AccidentBeq,r,tau_l,tau_d,tau_cg);
 
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j, Names_i, d_grid, a_grid, z_grid,simoptions);
+AllStats=EvalFnOnAgentDist_AllStats_MixHorz_PType(StationaryDist, Policy, FnsToEvaluate, Params, n_d, n_a, n_z,N_j, Names_i, d_grid, a_grid, z_grid,simoptions);
 
-Y=AggVars.Output.Mean;
+Y=AllStats.Output.Mean;
 
 P=((1-Params.tau_cg)*Params.P0 + (1-Params.tau_d)*Params.D)/(1+Params.r-Params.tau_cg);
 
 % Calculate the aggregate TFP as output/((capital^alpha_k)*(labor^alpha_l))
-AggregateTFP=Y/((AggVars.K.Mean^Params.alpha_k)*(AggVars.L_f.Mean^Params.alpha_l));
+AggregateTFP=Y/((AllStats.K.Mean^Params.alpha_k)*(AllStats.L_f.Mean^Params.alpha_l));
 
 % Total value of firms
 temp=V.firm.*StationaryDist.firm;
@@ -332,12 +332,12 @@ temp(StationaryDist.firm==0)=0; % Get rid of points that have V=-inf but zero ma
 TotalValueOfFirms=sum(temp(isfinite(temp)));
 
 fprintf('Following are some aggregates of the model economy: \n')
-fprintf('Output: Y=%8.2f \n',AggVars.Output.Mean)
+fprintf('Output: Y=%8.2f \n',AllStats.Output.Mean)
 fprintf('Aggregate TFP: Y=%8.2f \n',AggregateTFP)
-fprintf('Capital-Output ratio (firm side): K/Y=%8.2f \n',AggVars.K.Mean/Y)
-fprintf('Total asset value (HH side): P*S=%8.2f \n',P*AggVars.S.Mean)
+fprintf('Capital-Output ratio (firm side): K/Y=%8.2f \n',AllStats.K.Mean/Y)
+fprintf('Total asset value (HH side): P*S=%8.2f \n',P*AllStats.S.Mean)
 fprintf('Total firm value (firm side): Value of firm=%8.2f \n',TotalValueOfFirms)
-fprintf('Consumption-Output ratio: C/Y=%8.2f \n',AggVars.Consumption.Mean/Y)
+fprintf('Consumption-Output ratio: C/Y=%8.2f \n',AllStats.Consumption.Mean/Y)
 fprintf('Government-to-Output ratio: G/Y=%8.2f \n', Params.G/Y)
 fprintf('Wage: w=%8.2f \n',Params.w)
 

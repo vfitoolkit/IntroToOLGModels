@@ -1,0 +1,133 @@
+\documentclass[11pt]{article}%
+\usepackage{amsmath}
+%\usepackage{appendix}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{booktabs} 
+\usepackage{pdflscape}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subfig}
+\usepackage{geometry}
+\usepackage[sidewaysfigure]{rotating}
+\usepackage{natbib}
+\bibpunct{(}{)}{;}{a}{,}{,}
+\usepackage[doublespacing]{setspace}%
+\setcounter{MaxMatrixCols}{30}
+
+\usepackage{amsthm}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\renewcommand{\qedsymbol}{\textit{Q.E.D.}}
+
+\providecommand{\U}[1]{\protect\rule{.1in}{.1in}}
+
+\geometry{left=2.1cm,right=2.1cm,top=2.1cm,bottom=2.1cm}
+
+\usepackage{hyperref}
+\hypersetup{
+  pdftitle={OLG Models},    % title
+  pdfauthor={Robert Kirkby},     % author
+  %hyperfootnotes=false,
+  %hyperindex=true,
+  %hyperfigures=true,
+  colorlinks=true,                % makes links a coloured word, rather than putting coloured boxes around them
+  linkcolor=blue,                % makes internal links black
+  citecolor=blue,                % makes citations black
+  urlcolor=blue,                 % color of external links
+  breaklinks=true                 % allow links to be broken across multiple lines
+}
+
+\newcommand{\rob}[1]{{\color{red}\bf #1}}
+
+
+\begin{document}
+
+\title{An Introduction to OLG Models}
+\author{Robert Kirkby \\ Victoria University of Wellington
+\\ \href{https://doi.org/10.5281/zenodo.8136815}{https://doi.org/10.5281/zenodo.8136815}
+% \thanks{The authors would like to thank ...}
+}
+\date{\today \\ }
+\maketitle
+
+\vspace{-10mm}
+\begin{abstract}
+Explores and explains some basic OLG models. Starts with a deterministic OLG, showing how to define and compute the stationary general equilibrium. After this basic model it is shown how to add age-dependent parameters, survival probabilities (the possibility of dying before the final period), assets, a pension system, progressive taxation and government spending. We then move to stochastic OLGs by introducing idiosyncratic shocks, both persistent and transitory. Later models include: an OLG model in which there are married couple households, single male households, single female households; an OLG model with both heterogeneous households and heterogenous firms; an OLG model with a search-and-matching labor market. This is done over the course of a number of models to illustrate and explain clearly one-by-one how these parts are added to the model and implemented in the codes for each model.
+
+It is recommended to first read the Intro to Life-Cycle Models: \href{https://www.vfitoolkit.com/updates-blog/2021/an-introduction-to-life-cycle-models/}{vfitoolkit.com/updates-blog/2021/an-introduction-to-life-cycle-models/}
+\end{abstract}
+
+Keywords: Over-lapping generations; Fiscal; General equilibrium. \\
+\small
+
+\thispagestyle{empty}
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\newpage
+
+\section{Introduction}
+Explores and explains some overlapping-generations (OLG) models. Starts with a deterministic OLG, showing how to define and compute the stationary equilibrium. After this basic model it is shown how to add age-dependent parameters, survival probabilities (the possibility of dying before the final period), assets, a pension system, progressive taxation and government spending. Idiosyncratic shocks are then introduced leading us to stochastic OLGs. By the end it is solving an OLG model with heterogeneous households and heterogeneous firms, in which there are households facing genuinely different problems for married couples, single males, and single females. This pdf explains the models one-by-one, and the codes implementing each of them are all on github. We make use of the VFI Toolkit (vfitoolkit.com) and you will need Matlab with a compatible GPU.
+
+If you are not already familiar with finite-horizon life-cycle models and how to solve them, I recommended you learn that first although you could skip it if you want, see: \href{https://www.vfitoolkit.com/updates-blog/2021/an-introduction-to-life-cycle-models/}{\textcolor{blue}{VFI Toolkit: An Introduction to Life-Cycle Models}}
+
+If you are wanting to solve any kind of OLG model with one endogenous state, you probably will find everything you need by the end of this introduction to OLG models. If you want to solve advanced models with multiple endogenous states this intro will help you understand all the steps and how to set things up, but you will need to go and learn more sophisticated (but less easily generalized) algorithms needed to solve such models.
+
+The grids used for this introduction are on the smaller side so as to make the models more easily solved and accessible in terms of computational requirements. As a result you likely want to use larger grids in practice. Most models require a GPU with 8gb of gpu memory (GDDR memory) that works with Matlab. The first five models (the deterministic OLG) will likely run with much less (I guess 2gb?). The last few models, especially those with married couples will need 40gb of gpu memory.
+
+By the end of this introduction you will hopefully have a good idea of how to put together OLG models. If you are wanting to solve one-asset models then you can probably just use the toolkit as is. If you want to solve models with more assets you will likely need to go and learn some more advanced algorithms for solving OLG models (in particular the value function problem).
+
+A follow-up 'Introduction to OLG Transition Paths' should hopefully be forthcoming in a year or so.
+
+\newpage
+\section{The Models}
+We first build a deterministic OLG model, adding assets and a government that uses progressive taxes and runs a balanced budget, over the course of the first five models. Then in OLG Model 6 we make switch to a stochastic OLG model (idiosyncratic, but no aggregate, shocks), the change is very simple to make. OLG Model 7 then simply takes this model and shows how to calculate a variety of things related to it such as aggregates, life-cycle profiles, simulating panel data, and welfare.
+
+For OLG models 1-7 we will simply solve them in per-capita terms without really discussing this issue (simply as this is the mathematically and conceptually easiest way to approach the models). In OLG model 8, when we introduce deterministic economic/productivity growth we will also discuss how to deal with population growth in terms of solving for aggregate quantities, rather than just per-capita quantities as will have been implicit up until then. In practice, most OLG models in the literature are solved in per-capita terms.
+
+In OLG model 10 we introduce 'permament types' to solve an OLG Model with a fixed-effect in labor productivity. We then use this to build up a model in which we have married couples, single males, and single females; differences being not just things like different parameters, but different exogenous shocks, and even different numbers of decision variables (the married couple has two labor supply decisions, one for each spouse).
+
+In OLG model 14 we introduce heterogeneous firms, to have a model with both OLG heterogeneous households and heterogeneous firms.
+
+In OLG model 16 we introduce a search-and-matching labor market.
+
+In the codes we always write the general equilibrium conditions as an expression that will evaluate to zero when general equilibrium holds.
+
+The basic approach to solving these OLG models is very easy to use. Appendix A gives a brief description of the concept of 'solving' to find the general equilibrium involves. Appendix B shows how to speed it up by changing the algorithm for finding the general equilibrium, which requires giving just a little bit more information, it also describes how to instead use a slower but more robust algorithm to find the general equilibrium.
+
+
+\newpage
+\section{Building up OLG Models}
+
+\input{./Subsections/OLGModels1to5.tex}
+
+\input{./Subsections/OLGModels6to10.tex}
+
+\input{./Subsections/OLGModels11to15.tex}
+
+% \section{Search-and-Matching in OLG Models}
+% \input{./Subsections/OLGModels20to24.tex}
+
+\newpage
+
+\newpage
+
+\bibliographystyle{plainnat}
+\bibliography{/home/kmarshallbanana/Dropbox/RDKbiblio.bib}
+
+\newpage
+\appendix
+
+\input{./Subsections/OLGModelsAppendix.tex}
+
+
+\end{document}

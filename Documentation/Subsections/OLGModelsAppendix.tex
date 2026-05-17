@@ -1,0 +1,76 @@
+\section{Stationary General Equilibrium: Explanation of Solution Method}
+What is happening when we solve for general equilibrium? The basic idea is that we are looking for the parameters (specifically those parameters that are being determined in general equilibrium) that make the general equilibrium conditions all equal to zero. Recall that when we write the general equilibrium conditions in the code we write them as expressions that will evaluate to zero when the condition holds.
+
+We can think of this as choosing the general equilibrium parameters, $\theta$, to solve following optimization problem,
+\begin{eqnarray*}
+ \min_{\theta} \sum_g GEcond_g(\theta)^2
+\end{eqnarray*}
+where the $\sum_g GEcond_g(\theta)^2$ is the sum of squares of the general equilibrium conditions (note that by squaring a variable we make it so that the minimum possible value is zero; think about what a graph of $x^2$ looks like).\footnote{You could alternatively take the absolute value of each general equilibrium condition (actually, just set $heteroagentoptions.multiGEcriterion=0$ and it will do so). Also note that we are essentially giving every general equilibrium condition a weight of one and then taking the weighted sum. You can modify these weights using $heteroagentoptions.multiGEweights$.} Minimizing this sum of squares is going to result in finding $\theta$ such that all the general equilibrium conditions equal zero (if possible).
+
+When using the code $\theta$ is the parameters we name in \textit{GEPriceParamNames}, and the general equilibrium conditions are those we specify in $GeneralEqmEqns$ which should always be written to evaluate to zero in general equilibrium.
+
+So, finding the general equilibrium parameters such that the all the general equilibrium conditions equal zero (which will be the minimum of the sum of squares of the general equilibrium conditions) is the problem that the general equilibrium commands are solving, but how do they do this?
+
+The command to find the general equilibrium is doing essentially the following steps,
+\begin{enumerate}
+ \item Guess general equilibrium parameters $\theta$.
+ \item Based on $\theta$, solve the value function problem to get the policy function.
+ \item Based on policy function, solve for the agent stationary distribution.
+ \item Based on $\theta$, policy and agent stationary distribution, evaluate the FnsToEvaluate.
+ \item Based on $\theta$ and evaluated FnsToEvaluate, evaluate the general equilibrium conditions.
+ \item If the general equilibrium conditions are all zero, finish (and report $\theta$). Otherwise, update $\theta$ to a new guess and go back to step 1.
+\end{enumerate}
+Obviously the word 'update' is hiding a lot of detail about how to update $\theta$ in an intelligent fashion.\footnote{There is a vast computational literature on how to solve optimization problems, such as minimization. Appendix B here gives a very brief descriptions of some alternative options to the default in the codes.} But this is enough for us to understand the main steps.
+
+
+\section{Stationary General Equilibrium: How to Solve Faster, Or solve more robustly}
+By default VFI Toolkit uses Matlab's \textit{fminsearch()} command to solve the minimization problem of choosing the general equilibrium parameters to minimize (the sum of squares of) the general equilibrium conditions. This is easy to use, and provides a decent mix of speed and robustness for a default setting. In this section we explain three alternatives to the default of \textit{fminsearch()}, the first is to use Matlab's non-linear least squares optimizer \textit{lsqnonlin()} which is easy and fast but requires the Matlab Optimization Toolbox and as it is derivatives-based can be less accurate, the second is to use a shooting algorithm which is faster but requires more setting up and is less robust, and the third is to use the CMA-ES algorithm which is slower but much more robust and is trivial to set up. Code for OLGModelB implements these for OLG Model 6. Another option is to use to optimization algorithms one after another, which the toolkit can do for you.
+
+Relatedly, you can set the accuracy that is used for the general equilibrium equations using \textit{heteroagentoptions.toleranceGEcondns=10ˆ(-4)}, and of the general equilibrium parameters using \textit{heteroagentoptions.toleranceGEprices=10ˆ(-4)} (these will be passed internally to the optimization routines to use as their 'stopping tolerance').
+
+Of course one other easy trick for making things faster is to first make the grids small, solve the general equilibrium which will be fast because of the small grids, and then use this as an initial guess for the general equilibrium parameters while solving for a larger grid (this is known as a multi-grid method).
+
+We will start out with \textit{lsqnonlin()}. Least-squares minimization problems have specific structure that can be exploited during solution to speed things up, and \textit{lsqnonlin()} does this in a way that depends on derivatives. This makes it fast and powerful, but also means that sometimes it only solves the general eqm eqns to about three decimal places. Using \textit{lsqnonlin()} is as simple as setting \textit{heteroagentoptions.fminalgo=8}.
+
+Now we see how to use CMA-ES (covariance-matrix adaptation - evolutionary strategy). We do not attempt to explain how CMA-ES works here, you can search online where there is pleny of material. Actually implementing in codes to use CMA-ES instead of \textit{fminsearch()} is as simple as setting \textit{heteroagentoptions.fminalgo=4}. Done. (heteroagentoptions.fminalgo=1 is the default of fminsearch). This will make codes slower but has a much better ability to find the general equilibrium in complicated problems and where the initial guess is bad (loosely, it is going to spend more time moving slowly around the parameter space to find the optimum, and is less likely to get stuck at local minima).
+
+Setting up the shooting algorithm takes a little more work, but reduces run times notably (half or less). The idea is roughly as follows. We often can think how to update a given price based on a specific general equilibrium conditions. For example, in a standard model with a representative firm with Cobb-Douglas production function and perfect competition in the capital market, the interest rate $r$ is going to equal the marginal product of capital (net of depreciation), that is $r=\alpha K^{\alpha-1} L^{1-\alpha}-\delta$. So we have the general equilibrium conditions $r-\alpha K^{\alpha-1} L^{1-\alpha}-\delta$ (general equilibrium being when this equals zero). Notice that if this is positive, then $r$ is to big so we could reduce $r$, say by subtracting the value of this condition, and if this general equilibrium condition is negative then $r$ is to small and we could increase $r$ again by subtracting the value of this condition (which is negative). So maybe we could write something like $r_{new}=r_{old}-\phi (r_{old}-\alpha K^{\alpha-1} L^{1-\alpha}-\delta)$, that is the new price is the old price minus coefficient times general equilibrium condition. This is a shooting algorithm. To set it up we first tell the code we want to use the shooting algorithm, and then tell it which general equilibrium condition to use to update which price, whether to add or subtract, and what value to give the coefficient. If you use bigger coefficients the code will be faster but more fragile (might fail), if you use smaller coefficients the code will be slower but more stable. First, to say we want to use the shooting algorithm
+\begin{equation*}
+ heteroagentoptions.fminalgo=5;
+\end{equation*}
+then we define how to update the general equilibrium prices based on the general equilibrium conditions,
+\begin{table}[h!]
+\footnotesize
+heteroagentoptions.fminalgo5.howtoupdate=\{...  \% a row is: GEcondn, price, add, factor \\
+\phantom{aaa} 'capitalmarket','r',0,0.1;...  \% capitalmarket GE condition will be positive if r is too big, so subtract \\
+\phantom{aaa} 'pensions','pension',0,0.1;... \% pensions GE condition will be positive if pension is too big, so subtract \\
+\phantom{aaa} 'bequests','AccidentBeq',1,0.1;... \% bequests GE condition will be positive if AccidentBeq is too small, so add \\
+\phantom{aaa} 'Gtarget','G',0,0.1;... \% Gtarget GE condition will be positive if G is too big, so subtract \\
+\phantom{aaa} 'govbudget','eta1',1,0.1;... \% govbudget GE condition will be negative if eta1 is too big, so add \\
+    \};
+\end{table}
+To make sense of these you need to look at the general equilibrium conditions themselves (this is OLG Model 6). Note: the update is essentially new\_price=price+factor*add*GEcondn\_value-factor*(1-add)*GEcondn\_value. Notice that this adds factor*GEcondn\_value when add=1 and subtracts it what add=0. A small 'factor' will make the convergence to solution take longer, but too large a value will make it  unstable (fail to converge). Technically this is the damping factor in a shooting algorithm. There is no reason why I use 0.1, nor why this is the same for all of them. You can try changing a few to 0.2 or even 0.5 to see how the code runs faster (or if too high might even fail to solve).
+
+Lastly, we can combine these optimization methods. For example we know that \textit{lsqnonlin()} (\textit{heteroagentoptions.fminalgo=8}) is fast, but that because it is based on derivatives can struggle to reach high levels of accuracy, so we might want to use it but then clean up the solution with \textit{fminsearch()} (\textit{heteroagentoptions.fminalgo=1}). Just setting \textit{heteroagentoptions.fminalgo=[8,1]}, the toolkit will automatically first use \textit{lsqnonlin()}, and then starting from the solution this gives it switches to \textit{fminsearch()}. While using this, you might also want to set that the accuracy you require of the first method is less than the final accuracy, so you could, e.g., set \textit{heteroagentoptions.toleranceGEcondns=[10ˆ(-3),10ˆ(-4)]} which means that it will use the first of these with \textit{lsqnonlin()}, and the second with \textit{fminsearch()}.
+
+\section{Stationary General Equilibrium: Constrain General Equilibrium Parameters}
+Say you are finding the wage, $w$, in general equilibrium. You know this has to be positive, and if you try to solve the model with a negative wage then it gives errors. You can set constraints on the general equilibrium parameters to deal with these situations. There are three possible constraints, all of which are applied by specifying the name of the parameter you want to constrain. In the following, we will use $w$ as the name of the parameter (in GEPriceParamNames) that we wish to constain.
+
+You can constrain a parameter to be positive using
+\\ \noindent \textit{heteroagentoptions.constrainpositive=\{'w'\}}
+You can constrain a parameter to be between 0 and 1 (e.g., because it is a probability) using
+\\ \noindent \textit{heteroagentoptions.constrain0to1=\{'w'\}}
+You can constrain a parameter to be between A and B using
+\\ \noindent \textit{heteroagentoptions.constrainAtoB=\{'w'\}}
+and then you specify the values of A and B, e.g. that $w$ is between 3 and 5, with
+\\ \noindent \textit{heteroagentoptions.constrainAtoBlimits.w=[3,5]}
+[Use name of parmeter as field, '.w', and then use a vector of two values for the range to apply to that parameter]
+
+
+
+\section{General Equilibrium beyond Stationary General Equilibrium} \label{app:eqmwithgrowth}
+Not yet written. Will explain a wider definition of general equilibrium, and then explain the definition of stationary general equilibrium. Is not something any of the models here actually do anyway.
+
+
+
+

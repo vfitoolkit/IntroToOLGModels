@@ -1,11 +1,11 @@
-function F=OLGModel4_ReturnFn(h,aprime,a,agej,r,A,delta,alpha,sigma,psi,eta,Jr,pension,tau,kappa_j,J,warmglowparam1,warmglowparam2,AccidentBeq)
+function F=OLGModel4_ReturnFn(h,aprime,a,agej,r,A,delta,alpha,sigma,psi,eta,Jr,pension,tau,kappa_j,J,wg1,wg2,wg3,AccidentBeq)
 % Compared to OLGModel3_ReturnFn we have added assets, so aprime and a now
 % are relevant. Comments below explain the other main changes as part of
 % including assets.
 
 % Note: in the final period (j=J) we add a warm glow bequest. 
 % Without a bequest motive agents want to die with zero assets (not able to
-% do so perfectly because surivial is uncertain due to sj, but will be close)
+% do so perfectly because survival is uncertain due to sj, but will be close)
 % A warm-glow bequest allows model to fit the empirical fact that people do
 % still have assets when they die (and not just people who have children to
 % leave assets to, people without children also have assets when they die)
@@ -36,7 +36,7 @@ end
 
 % Warm-glow bequest
 if agej==J % Final period
-    warmglow=warmglowparam1*(aprime^(1-warmglowparam2))/(1-warmglowparam2);
+    warmglow=wg1*((1+aprime/wg2)^(1-wg3))/(1-wg3);
     F=F+warmglow;
 end
 % Notice that we have modelled the warm-glow in such a way that you only
@@ -44,7 +44,7 @@ end
 % risk of dying every period. So we might prefer to model that we get the
 % warm glow bequest if we die at any age. The following commented out two lines
 % implement this alternative. [note: need to add sj to inputs of ReturnFn to use it]
-% warmglow=warmglowparam1*(aprime^(1-warmglowparam2))/(1-warmglowparam2); % Note: same formula as above
+% warmglow=wg1*((1+aprime/wg2)^(1-wg3))/(1-wg3); % Note: same formula as above
 % F=F+(1-sj)*warmglow
 % Note: if using this, have to make sure sj=0 for j=J.
 % Comment: I am not aware of any study saying which of these two

@@ -1,4 +1,4 @@
-function F=OLGModel5_ReturnFn(h,aprime,a,agej,r,A,delta,alpha,sigma,psi,eta,Jr,pension,tau,kappa_j,J,warmglow1,warmglow2,AccidentBeq, eta1,eta2)
+function F=OLGModel5_ReturnFn(h,aprime,a,agej,r,A,delta,alpha,sigma,psi,eta,Jr,pension,tau,kappa_j,J,wg1,wg2,wg3,AccidentBeq, eta1,eta2)
 % Only change from OLGModel4_ReturnFn is to include a progressive income tax
 
 KdivL=((r+delta)/(alpha*A))^(1/(alpha-1));
@@ -30,7 +30,7 @@ end
 
 % Warm-glow bequest
 if agej==J % Final period
-    warmglow=warmglow1*(aprime^(1-warmglow2))/(1-warmglow2);
+    warmglow=wg1*((1+aprime/wg2)^(1-wg3))/(1-wg3);
     F=F+warmglow;
 end
 % Notice that we have modelled the warm-glow in such a way that you only
@@ -38,7 +38,7 @@ end
 % risk of dying every period. So we might prefer to model that we get the
 % warm glow bequest if we die at any age. The following commented out two lines
 % implement this alternative. [note: need to add sj to inputs of ReturnFn to use it]
-% warmglow=warmglowparam1*(aprime^(1-warmglowparam2))/(1-warmglowparam2); % Note: same formula as above
+% warmglow=wg1*((1+aprime/wg2)^(1-wg3))/(1-wg3); % Note: same formula as above
 % F=F+(1-sj)*warmglow
 % Note: if using this, have to make sure sj=0 for j=J.
 % Comment: I am not aware of any study saying which of these two

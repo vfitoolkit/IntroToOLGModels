@@ -1,4 +1,4 @@
-function F=OLGModel12_ReturnFn(h1,h2,aprime,a,z1,z2,e1,e2,sigma,psi,eta,agej,Jr,J,pension,r,kappa_j1,kappa_j2,gamma_1,gamma_2,A,alpha,delta,eta1,eta2,warmglow1,warmglow2,AccidentBeq,tau)
+function F=OLGModel12_ReturnFn(h1,h2,aprime,a,z1,z2,e1,e2,sigma,psi,eta,agej,Jr,J,pension,r,kappa_j1,kappa_j2,gamma_1,gamma_2,A,alpha,delta,eta1,eta2,wg1,wg2,wg3,AccidentBeq,tau)
 % The first seven are the 'always required' decision variables, next period
 % endogenous states, this period endogenous states, exogenous states
 % After that we need all the parameters the return function uses, it
@@ -34,7 +34,7 @@ end
 
 % Warm-glow bequest
 if agej==J % Final period
-    warmglow=warmglow1*(aprime^(1-warmglow2))/(1-warmglow2);
+    warmglow=wg1*((1+aprime/wg2)^(1-wg3))/(1-wg3);
     F=F+warmglow;
 end
 % Notice that we have modelled the warm-glow in such a way that you only
@@ -42,7 +42,7 @@ end
 % risk of dying every period. So we might prefer to model that we get the
 % warm glow bequest if we die at any age. The following commented out two lines
 % implement this alternative. [note: need to add sj to inputs of ReturnFn to use it]
-% warmglow=warmglowparam1*(aprime^(1-warmglowparam2))/(1-warmglowparam2); % Note: same formula as above
+% warmglow=wg1*((1+aprime/wg2)^(1-wg3))/(1-wg3); % Note: same formula as above
 % F=F+(1-sj)*warmglow
 % Note: if using this, have to make sure sj=0 for j=J.
 % Comment: I am not aware of any study saying which of these two

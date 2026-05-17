@@ -1,4 +1,4 @@
-function F=OLGModel8_ReturnFn(h,aprime,a,z,e,sigma1,sigma2,agej,Jr,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,warmglow3,beta,sj,tau,g)
+function F=OLGModel8_ReturnFn(h,aprime,a,z,e,sigma1,sigma2,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,wg1,wg2,wg3,tau,g)
 % Add deterministic growth g (compared to OLGModel6_ReturnFn)
 
 KdivL=((r+delta)/(alpha*A))^(1/(alpha-1));
@@ -15,13 +15,9 @@ if c>0
     F=( ((c^sigma1)*((1-h)^sigma2))^(1-sigma2) )/(1-sigma2); % The utility function
 end
 
-% add the warm glow to the return, but only near end of life
-if agej>=Jr+10
-    % Warm glow of bequests
-    warmglow=warmglow1*(((1+g)*aprime-warmglow2)^(1-warmglow3))/(1-warmglow3);
-    % Modify for beta and sj (get the warm glow next period if die)
-    warmglow=beta*(1-sj)*warmglow;
-    % add the warm glow to the return
+% Warm-glow bequest
+if agej==J % Final period
+    warmglow=wg1*((1+(1+g)*aprime/wg2)^(1-wg3))/(1-wg3);
     F=F+warmglow;
 end
 

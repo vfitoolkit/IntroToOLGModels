@@ -60,6 +60,17 @@ clear all
 fprintf('Running OLGModel14 \n')
 OLGModel14
 
+% Now the search-and-matching models
+addpath('./Models15to19/')
+
+clear all
+fprintf('Running OLGModel15 \n')
+OLGModel15
+
+clear all
+fprintf('Running OLGModel16 \n')
+OLGModel16
+
 % Now the appendix models
 addpath('./Appendix/')
 

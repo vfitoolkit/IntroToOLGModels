@@ -1,0 +1,313 @@
+
+\subsection{OLG Model 6: Stochastic OLG}
+We now switch to a OLG with stochastic idiosyncratic shocks. We will introduce a variety of details at once, if you want to understand what they are doing individually check the \href{https://www.vfitoolkit.com/updates-blog/2021/an-introduction-to-life-cycle-models/}{Introduction to Life-Cycle Models}. We won't make any changes to the firm and markets from what it was in OLG Model 5. The ordering of concepts in VFI Toolkit means we think of the state space as being: endogenous state(s), exognenous state(s), model period/age.
+
+We will add both a persistent and a transitory component for (hourly) earnings shocks. The persistent shock is an AR(1) and the transitory shock is i.i.d. normal. This is probably the most standard process in the literature.\footnote{There are plenty of ways to improve on this, but it gives a reasonable baseline to start.} VFI Toolkit calls markov variables, 'z' variables, and also has a feature to handle i.i.d variables, which it calls 'e' variables.\footnote{Alternatively, VFI Toolkit can simply treat an iid variable as if it were markov (by creating a transition matrix for which all the rows are identical). Both approaches give the same answer, but by letting VFI Toolkit know that the shock is i.i.d. the code is able to take advantage of this and run faster.} Papers that empirically estimate earnings processes like those used here often also include a fixed effect, OLG Model 10 demonstrates how to extend the present model to do precisely this.
+
+The household problem to be solved is unchanged except for the introduction of the two shocks.
+\begin{eqnarray*}
+ V(a,z,e,j)&=& \max_{c,h,a'} \frac{c^{1-\sigma}}{1-\sigma} - \psi \frac{h^{1+\eta}}{1+\eta}  + \beta s_j E_{z',e'}[V(a',j+1,z',e')|z] \\
+&&\text{if working, }j<=Jr: Income=ra+w* \kappa_j*exp(z+e) h \\
+&&\text{if retired, }j\geq Jr: Income=ra \\
+&& IncomeTax=\eta_1+\eta_2*log(Income)*Income \\
+&&\text{if working, }j<=Jr: c+a'=(1-\tau) w \kappa_j*exp(z+e) h + (1+r) a -IncomeTax +(1+r)AccidentBeq\\
+&&\text{if retired, }j\geq Jr: c+a'=pension+ (1+r) a -IncomeTax +(1+r)AccidentBeq +\mathbb{I}_{j=J} warmglow(a') \\
+&& 0\leq h \leq 1 \\
+&& z'=\rho_z z + \epsilon, \quad \epsilon \sim N(0,\sigma_{\epsilon,z}^2) \\
+&& e \sim N(0,\sigma_{e}^2)
+\end{eqnarray*}
+Note that we have $\kappa_j*exp(z+e)$, many papers would instead use $exp(\kappa_j+z+e)$ where $\kappa_j$ would now be the log of the values we use here;\footnote{Or you could of course have $\kappa_j*z*e$ by redefining $z$ and $e$ to be the exponentials of what we use here. In the code this just means either taking an exponential or log of the grid, and then altering things like the ReturnFn and FnsToEvaluate appropriately.} I leave it unchanged so that the numbers in the codes can just be left the same. The state vector of the value function now includes both the exogenous shock processes, and next period value function is in expectation. Notice that the expectation is over both $z'$ and $e'$, and that because $z$ is markov it is conditional on this period value of $z$ (whereas since $e$ is i.i.d. the this period value is not relevant to the expectations for the next period realisation).
+
+We also need to define the tax revenue as,
+\begin{equation*}
+ IncomeTaxRevenue=\int (\eta_1+\eta_2*log(Income)*Income) d\mu
+\end{equation*}
+where $Income$ is as defined above and depends both on the household state (through age (working/retired) and assets) and policies (through hours worked).
+
+The government budget balance is then given by,
+\begin{equation*}
+ G=IncomeTaxRevenue
+\end{equation*}
+notice that we are modelling the pensions and the rest of Government as two separate budgets. Whether this is appropriate depends on the country being modelled.
+
+The definition of a stationary equilibrium for this model is now,
+\begin{definition}
+ A stationary equilibrium is price $r$ (and $w$), and government policies $\tau$ and $pension$ such that
+ \begin{enumerate}
+  \item Given prices ($r$ and $w$) and government policies ($\tau$, $pension$), the household value function, $V$, and related policy function, $policy$, solve the household problem.
+  \item The agents distribution evolves according to,
+   \\  $\mu(a_{j+1},z_{t+1},e_{t+1},j+1)=\int \mathbb{I}_{a_{j+1}=policy_{a'}} \frac{\mu^{j+1}}{\mu^j} d\mu(a,z,e,j) \Gamma(z_{t+1}|z_t) Pr(\epsilon_{t+1}), \; j=1,2,...,J,\text{ and } \mu(:,:,:,1)=jequaloneDist$.
+  \item The aggregates are based on household policies and agent distribution,
+   \\ $L=\int \kappa_j exp(z+e) policy_h d\mu$
+   \\ $K=\int a d\mu$
+   \\ $PensionSpending=\int pension \mathbb{I}_{j\geq Jr} d\mu$
+   \\ $IncomeTaxRevenue=\int (\eta_1+\eta_2*log(Income)*Income) d\mu$
+   \\ $AccidentalBeqLeft= \int policy_{a'}(1-s_j) d\hat{\mu}$
+  \item Labor markets clear: $w=(1-\alpha)A K^{\alpha}L^{-\alpha}$
+   \\ Capital markets clear: $r=\alpha A K^{\alpha-1} L^{1-\alpha} - \delta$
+   \\ Pension system balance: $PensionSpending=\tau*w*L$
+   \\ Government budget balance: $G=IncomeTaxRevenue$
+   \\ Accidental bequest balance: $AccidentBeq=AccidentalBeqLeft/(1+n)$
+ \end{enumerate}
+\end{definition}
+\noindent note that the household problem is slightly different, and that the agent distribution (and hence all the integrals) is also now over the state space that includes the idiosyncratic exogenous shocks, namely over $(a,z,e,j)$.\footnote{When implementing we need to substitute for $Income$ with its expression in terms of the household variables (see the household problem), as otherwise the integral over the agent distribution does not make sense. I do not do so here purely because otherwise the equation gets a bit messy.} Note that the evolution of the agent distribution has been modified to also include the probabilities of the shocks.
+
+Because we assume a continuum of agents, the idiosyncratic shocks experienced by the indidivual agents do not create any uncertainty for the aggregate economy because we integrate over the entire distribution.\footnote{Intuitively, if you have the whole population then you know all the distribution's moments/statistics with precision.} Hence aggregates like $L$ and prices like $w$ are still just numbers like they were in the model without idiosyncratic shocks.
+
+We also need to enforce the condition that government consumption as a fraction of GDP is equal to $GdivYtarget$, and the easiest way is to include this as another general equilibrium condition. We do this in the codes.
+
+\subsection{Incomplete Markets in General Equilibrium}
+If you compare OLG Model 5 and OLG Model 6 you will see that the equilibrium has a higher aggregate capital-output ratio (K/Y) and a lower equilibrium real interest rate. This reflects one of the most important effects of incomplete markets, namely that they lead to precautionary savings and that as a result there is more capital (lower interest rate) than in the complete markets economy. Because the complete markets economy essentially defines efficiency the incomplete markets economy is inefficient because it has too much capital. It is for this reason (among other reasons) that incomplete markets models give results like: that the optimal capital income taxation rate is greater than zero (as it reduces capital towards the efficient level for low tax rates), that the optimal level of government debt is positive (as it soaks up some savings that would otherwise go into capital), that optimal income taxes are progressive (as they provide a form of insurance that reduces the need for precautionary savings), and that some kind of transfers to low asset households is efficient (again reducing the need for precautionary savings). None of these would be the case in a Representative Agent model, but they are for incomplete market heterogeneous agent models.
+
+\subsection{OLG Model 7: Analyzing the OLG model}
+We will just reuse OLG model 6, but look at a variety of model outputs, including aggregates, life-cycle profiles, simulating panel data and running a regression on it, and inequality. Since the model is unchanged we will not repeat it here.
+
+Once you have found the general equilibrium we can analyse it using the same kinds of functions that are used for Life-Cycle models. We will simulate some panel data and run a regression on this that measures the amount of 'consumption insurance against earnings shocks' (this model will have less consumption insurance than in the data).
+
+There are dedicated commands for looking at inequality statistics and we can see that while the Gini coefficient of earnings is not too far from realistic (given we haven't really calibrated the model appropriately) the top earnings inequality (such as the share of earnings of the top 5\% or top 1\%) are much smaller than in the data.
+
+
+
+\subsection{OLG Model Examples based on papers}
+You can find example codes of some OLG models that implement the 'baseline' models of \cite*{ImrohorogluImrohorogluJoines1995}, \cite*{Huggett1996}, \cite*{ConesaKrueger1999}, and \cite*{ConesaKitaoKrueger2009} at:
+\\ \href{https://github.com/vfitoolkit/VFItoolkit-matlab-examples/tree/master/OLG}{https://github.com/vfitoolkit/VFItoolkit-matlab-examples/tree/master/OLG}
+
+If you have followed all the OLG models until this point then you will be able to understand both what those papers do and how the codes are going about implementing the baseline models.
+
+\subsection{OLG Model 8: Deterministic Economic/productivity growth}
+We now add deterministic productivity growth to the model. To be able to solve it we first have to renormalize the model by 'dividing' everything by the growth to get a stationary model, and then solve this. We can then put the growth back into the solution, should we wish to do so (alternatively, people will often first remove the growth/trend from the empirical data before comparing it to the model). Intuitively, this is just the same trick as when solving the Solow growth model by looking at the balanced growth path (by switching things into per capita per technology unit we get a stationary model, and can then solve this), and in fact the way that we renormalize the model will be exactly analagous. To be able to include growth we have to change the utility function to be non-seperable (that the marginal utility of leisure must depend on the marginal utility of consumption; intuitively, otherwise economic growth leads people to be so rich they never work); for an explanation of this see Life-Cycle Model 22 in the \href{https://www.vfitoolkit.com/updates-blog/2021/an-introduction-to-life-cycle-models/}{\textcolor{blue}{Introduction to Life-Cycle Models}}. We will use almost the same model as OLG Model 6, but with the introduction of deterministic productivity growth, the change to non-seperable utility function, and indexing pensions to growth.
+
+We first write out the model with growth, in which there are now necessarily time subscripts everywhere, and then transform this into the stationary model which we can actually compute and solve (and if desired we can then reinflate the results, we will do this towards the end). We will have deterministic productivity growth at rate $g$, and population growth at rate $n$. We will begin with a model that includes both of these, and then convert to per-capita per-technology units to get a model which has a stationary equilibrium we can solve.
+
+As we will see below when looking at the household problem, before we renormalize the value function $V_t$ now depends on $t$ (and not just $j$) and so we cannot solve for it in the same way as normal. Similarly in the model with growth we cannot define the stationary equilibrium in the same way we did previously. It is still possible to define a general equilibrium in such a model, but this is not very useful to us computationally (Appendix \ref{app:eqmwithgrowth} provides the definition). Instead we need to 'remove' the growth from the model by renormalizing it so that the resulting normalized model has a stationary equilibrium, and we will then be able to solve for this in the same way as usual. The basic idea is that because all of the growth in the economy comes from the $(1+g)^t$ term (in $A_t$ in the production function) we can just divide everything be $(1+g)^t$ and then the resulting model will not have any growth; implementing this idea is slightly more subtle, but that is the concept. Let's do it!
+
+Deterministic productivity growth is introduced using a productivity term in the Cobb-Douglas production function, which is now
+\begin{equation*}
+ Y_t=A K_t^{\alpha} ((1+g)^t L_t)^{1-\alpha}
+\end{equation*}
+where $g$ is the growth rate. Notice that instead of putting $A$ out the front we could have put it in with the $(1+g)^t$ term (it would just be $\hat{} \,( 1/(1-\alpha))$ of it's current value).\footnote{We could alternatively have had the $(1+g)^t$ term out front as total-factor productivity growth (rather than labor augmenting technology growth as we have here), but it would then simply complicate the formulas for normalization (and we would no longer get that $g$ is also the growth rate of output-per-capita, which we will here; note that output-per-capita growth is TFP growth together with capital deepening in this model). There is no meaningful difference between TFP growth and labor-augmenting productivity growth when we have a Cobb-Douglas production function.}
+
+To be able to solve this model we need to convert it into per-capita per-technology unit terms. To this end, define the following,
+\begin{eqnarray*}
+ \hat{Y} &=& \frac{Y}{(1+g)^t (1+n)^t N_0} \\
+ \hat{K} &=& \frac{K}{(1+g)^t (1+n)^t N_0} \\
+ \hat{L} &=& \frac{L}{(1+n)^t N_0} \\
+ \hat{w} &=& \frac{w}{(1+g)^t} \\
+\end{eqnarray*}
+where the hat, $\hat{}$, denotes per-capita per-technology unit for $Y$ and $K$, but just per capita for $L$, and just per-technology unit for $w$. Notice that as well as having population growth rate $n$ we have some initial population $N_0$ (which previously was implicitly normalized to 1), thus our $\hat{L}$ is labor supply per-capita which is what we had been implicitly using in all of our models up until now.\footnote{It is written here as if I have defined these per-capita per-technology unit terms, and will now use them in the production function. In fact the formulation of these terms follows from how the production function is defined, and the choice to model labor-augmenting technology; if we used something other production function, or if we used, e.g., TFP technology, then we would likely have to use a different formulation to 'remove' the growth from the model. Essentially, when creating the model I first wrote down the production function and then backed out these expressions for how to define the 'hat' variables from this.}
+
+Now that we have these, let's first see how the production function can be rewritten in terms of these variables (even though we do not actually need it to solve the model), and then we will look at how the expressions for the general equilibrium conditions change. We will then deal with the household problem and the evolution of the agent distribution.  We will lastly look at the formulas for the aggregates.\footnote{We need to know both the renormalizations for the aggregates themselves, and the renormalizations for the household-level variables, which we won't know until we have thought about how to handle both the production function and the household problem.}
+
+The production function is $ Y_t=A K_t^{\alpha} ((1+g)^t L_t)^{1-\alpha}$, and we can substitute in this using the (rearranged) definitions of the 'hat' variables,
+\begin{eqnarray*}
+  Y_t=A K_t^{\alpha} ((1+g)^t L_t)^{1-\alpha} \\
+  \hat{Y}_t (1+g)^t (1+n)^t N_0 = A [\hat{K}_t (1+g)^t (1+n)^t N_0 ]^{\alpha} [(1+g)^t \hat{L} (1+n)^t N_0]^{1-\alpha} \\
+  \hat{Y}_t (1+g)^t (1+n)^t N_0 = A \hat{K}_t^{\alpha} \hat{L}_t^{1-\alpha} (1+g)^t (1+n)^t N_0 \\
+  \hat{Y}_t = A \hat{K}_t^{\alpha} \hat{L}_t^{1-\alpha}
+\end{eqnarray*}
+Recall that we get expressions for labor market clearance and capital market clearance from the requirement that the wage equals the marginal product of labor, and the interest rate (net of depreciation) equals the marginal product of capital (because we assume perfect competition in labor and capital markets). Taking the derivative of ouput with respect to labor we get the first line of the following, and can then substitute and simplify,
+\begin{eqnarray*}
+ w_t=(1-\alpha) A K_t^{\alpha}  ((1+g)^t L_t)^{-\alpha} (1+g)^t \\
+ \hat{w}_t (1+g)^t = (1-\alpha) A [\hat{K}_t (1+g)^t (1+n)^t N_0 ]^{\alpha} [(1+g)^t \hat{L} (1+n)^t N_0]^{-\alpha} (1+g)^t \\
+ \hat{w}_t (1+g)^t = (1-\alpha) A \hat{K}_t^{\alpha} \hat{L}_t^{-\alpha} (1+g)^t \\
+ \hat{w}_t = (1-\alpha) A \hat{K}_t^{\alpha} \hat{L}_t^{-\alpha}
+\end{eqnarray*}
+and doing similarly for the interest rate
+\begin{eqnarray*}
+ r_t=\alpha A K_t^{\alpha-1}  ((1+g)^t L_t)^{1-\alpha} -\delta \\
+ r_t = (1-\alpha) A [\hat{K}_t (1+g)^t (1+n)^t N_0 ]^{\alpha-1} [(1+g)^t \hat{L} (1+n)^t N_0]^{1-\alpha} \\
+ r_t = (1-\alpha) A \hat{K}_t^{\alpha-1} \hat{L}_t^{1-\alpha}
+\end{eqnarray*}
+Notice that we still just have $r_t$. We could define $\hat{r}_t=r_t$ if we wanted to have it so everything in our renormalized model was expressed with a 'hat', but we won't bother to do that here.
+
+We have already dealt with two of the general equilibrium conditions, so now let's handle the other three: pension system balance, government budget balance, and accidental bequests. Pension system balance is trivial if we assume that the household pensions are indexed to per-capita income growth, and so total pension spending growth with $n$ and $g$. We get that pension system balance is now just $PensionSpending=\tau w L_t$, which becomes $\widehat{PensionSpending} (1+g)^t (1+n)^t N_0=\tau \hat{w} (1+g)^t (1+n)^t N_0 \hat{L}_t$, where we define $\widehat{PensionSpending}=PensionSpending/((1+g)^t (1+n)^t N_0)$ in per-capita per-technology unit terms. The Pension system balance simplifies to $\widehat{PensionSpending}=\tau \hat{w} \hat{L}_t$. Similarly we get $\hat{G}=\widehat{IncomeTaxRevenue}$, where we define $\hat{G}=G/((1+g)^t (1+n)^t N_0)$ and  $\widehat{IncomeTaxRevenue}=IncomeTaxRevenue/((1+g)^t (1+n)^t N_0)$. We need to slightly rework the accidental bequests balance, which we now set as $AccidentBeq_t=AccidentBeqLeft_{t-1}$ (previously we used $AccidentBeqLeft/(1+n)$ in the codes, but not in the definition, where the $/(1+n)$ was relflecting that it related to the previous periods and the model was in per-capita terms). We can renormalize this as $\widehat{AccidentBeq}_t=\widehat{AccidentBeqLeft}_{t-1}/((1+g)(1+n))$, where the 'hat' are both defined by dividing by $(1+g)^t (1+n)^t N_0$, note that the $/((1+g)(1+n))$ comes from the different time subscripts.
+
+We are now ready to handle the household problem, which is given by
+\begin{eqnarray*}
+ V_t(a_t,z,e,j)&=& \max_{c_t,h,a_{t+1}} \frac{c_t^{1-\sigma_1} (1-h_t)^{1-\sigma_1}}{1-\sigma_2} + \beta s_j E_{z',e'}[V_{t+1}(a_{t+1},j+1,z',e')|z] \\
+&&\text{if working, }j<=Jr: Income_t=r_t a_t+w_t* \kappa_j*exp(z+e) h \\
+&&\text{if retired, }j\geq Jr: Income_t=ra_t \\
+&& IncomeTax_t=\eta_1+\eta_2*log(Income_t)*Income_t \\
+&&\text{if working, }j<=Jr: c_t+a_{t+1}=(1-\tau) w_t \kappa_j*exp(z+e) h + (1+r) a_t -IncomeTax_t +(1+r)AccidentBeq \\
+&&\text{if retired, }j\geq Jr: c_t+a_{t+1}=pension_t+ (1+r_t) a_t -IncomeTax_t +(1+r_t)AccidentBeq_t +\mathbb{I}_{j=J} warmglow(a_{t+1}) \\
+&& 0\leq h \leq 1 \\
+&& z'=\rho_z z + \epsilon, \quad \epsilon \sim N(0,\sigma_{\epsilon,z}^2) \\
+&& e \sim N(0,\sigma_{e}^2)
+\end{eqnarray*}
+where importantly $V_t$ is now indexed by $t$. I have put $t$ subscipts only on the variables that will grow with time (hence they are on things like wage, assets and consumption, but not on things like idiosyncratic shocks and fraction of time worked).
+
+To see how we are going to renormalize this, it helps to focus on the earnings $w_t* \kappa_j*exp(z+e) h$. Notice how the growth in earnings is going to be captured in $w_t$, and so we don't have any growth in the $\kappa_j*exp(z+e) h$ (effective hours worked) component. We already defined $\hat{w}=\frac{w}{(1+g)^t}$ above when dealing with the production function, and so if we divide the whole budget constraint by $(1+g)^t$ we will be able to replace the $w_t$ with $\hat{w}_t$ and the earnings term will no longer be growing. This intuition is the basis for how we define the rest of our concepts: we already saw that $r_t$ doesn't growth, so for the $(1+r_t)a_t$ term we will define $\hat{a}_t=a_t/((1+g)^t)$. Repeating this approach we get $\hat{c}_t=c_t/((1+g)^t)$, $\widehat{Income}_t=Income_t/((1+g)^t)$, $\widehat{IncomeTax}_t=IncomeTax_t/((1+g)^t)$, $\widehat{AccidentBeq}_t=AccidentBeq_t/((1+g)^t)$,  $\widehat{pension}_t=pension_t/((1+g)^t)$.
+
+Making all of these substitutions we get that the household problem becomes
+\begin{eqnarray*}
+ V(\hat{a},z,e,j)&=& \max_{\hat{c},h,\hat{a}'} \frac{\hat{c}^{1-\sigma_1} (1-h)^{1-\sigma_1}}{1-\sigma_2} + \beta (1+g)^{\sigma_1(1-\sigma_2)} s_j E_{z',e'}[V(\hat{a}',j+1,z',e')|z] \\
+&&\text{if working, }j<=Jr: \widehat{Income}=r \hat{a}+\hat{w}* \kappa_j*exp(z+e) h \\
+&&\text{if retired, }j\geq Jr: \widehat{Income}=r\hat{a} \\
+&& \widehat{IncomeTax}=\hat{\eta}_1+\eta_2*log(\widehat{Income})*\widehat{Income} \\
+&&\text{if working, }j<=Jr: \hat{c}+(1+g)\hat{a}'=(1-\tau) \hat{w} \kappa_j*exp(z+e) h + (1+r) \hat{a} -\widehat{IncomeTax} +(1+r)\widehat{AccidentBeq} \\
+&&\text{if retired, }j\geq Jr: \hat{c}+(1+g)\hat{a}'=pension_t+ (1+r_t) \hat{a} -\widehat{IncomeTax} +(1+r)\widehat{AccidentBeq} +\mathbb{I}_{j=J} warmglow((1+g)\hat{a}') \\
+&& 0\leq h \leq 1 \\
+&& z'=\rho_z z + \epsilon, \quad \epsilon \sim N(0,\sigma_{\epsilon,z}^2) \\
+&& e \sim N(0,\sigma_{e}^2)
+\end{eqnarray*}
+notice most importantly that the discount factor is now $\beta (1+g)^{\sigma_1(1-\sigma_2)}$, to understand why see Life-Cycle model 22 in the \href{https://www.vfitoolkit.com/updates-blog/2021/an-introduction-to-life-cycle-models/}{Introduction to Life-Cycle models}. From the perspective of computing the model solution, the most important thing is that now the value function $V$ does not depend on time, and so we can solve it in the standard fashion. Notice also that the tax parameter $\eta_1$ has had to be changed to $\hat{\eta}_1$ as it does not make sense to have a lump-sum component of tax unless this grows with incomes (so $\eta_1$ is growing, and $\hat{\eta}_1=\eta_1/((1+g)^t)$ is constant).
+
+We can now consider the agents distribution. I won't go into the details here but essentially instead of writing it as $\mu(a,z,e,j)$ we can just write it as $\hat{\mu}(\hat{a},z,e,j)=\mu(a/((1+g)^t),z,e,j)$ and there is therefore no change that we need to make (other than putting hats on lots of terms) in the expression for the evolution of the agents distribution. Notice that having solved for $\hat{\mu}(\hat{a},z,e,j)$ it is trivial to recover $\mu(a,z,e,j)$ should we wish to do so. In the discussion of the agent distribution in this paragraph I have, for convenience, ignored writing the time subcripts that should appear on $\mu$ and $a$.
+
+We are just left with the expression for the aggregates, it trivally follows that these are given by,
+\begin{eqnarray*}
+ \hat{L}=\int \kappa_j exp(z+e) policy_h d\hat{\mu} \\
+ \hat{K}=\int a d\hat{\mu} \\
+ \widehat{PensionSpending}=\int \hat{pension} \mathbb{I}_{j\geq Jr} d\hat{\mu} \\
+ \widehat{IncomeTaxRevenue}=\int (\hat{eta}_1 + \eta_2 log(\widehat{Income}) \widehat{Income} ) d\hat{\mu}
+\end{eqnarray*}
+Note that what I do with the progressive tax function is a bit of an abritrary hack.\footnote{As discussed in OLG Model 5 there are three main functional forms used to model progressive taxation: \cite*{GunerKaygusuvVentura2014}, \cite*{GouveiaStrauss1994,GouveiaStrauss1999} and \cite*{HeathcoteStoreslettenViolante2014}. But all would mean taxes increase as incomes increase. Renormalizing income as an input, as I do here, can help 'solve' this for all three, but is arbitrary. I am not aware of any evidence on what constitutes a 'good' way to extend any of these to accomodate income growth.}
+
+Whew! We are just about done. Now we can just write the definition for stationary general equilibrium and then get to solving :)
+
+The definition of a stationary equilibrium for this model is now,
+\begin{definition}
+ A stationary equilibrium is price $r$ (and $\hat{w}$), and government policies $\tau$ and $\widehat{pension}$ such that
+ \begin{enumerate}
+  \item Given prices ($r$ and $\hat{w}$) and government policies ($\tau$, $\widehat{pension}$), the household value function, $V$, and related policy function, $policy$, solve the household problem.
+  \item The agents distribution evolves according to,
+   \\  $\hat{\mu}(\hat{a}_{j+1},z_{t+1},e_{t+1},j+1)=\int \mathbb{I}_{\hat{a}_{j+1}=policy_{\hat{a}'}} \frac{\hat{\mu}^{j+1}}{\hat{\mu}^j} d\hat{\mu}(\hat{a},z,e,j) \Gamma(z_{t+1}|z_t) Pr(\epsilon_{t+1}), \; j=1,2,...,J,\text{ and } \hat{\mu}(:,:,:,1)=jequaloneDist$.
+  \item The aggregates are based on household policies and agent distribution,
+   \\ $\hat{L}=\int \kappa_j exp(z+e) policy_h d\hat{\mu}$
+   \\ $\hat{K}=\int \hat{a} d\hat{\mu}$
+   \\ $\widehat{PensionSpending}=\int \hat{pension} \mathbb{I}_{j\geq Jr} d\hat{\mu}$
+   \\ $\widehat{IncomeTaxRevenue}=\int (\hat{\eta}_1+\eta_2*log(\widehat{Income})*\widehat{Income}) d\hat{\mu}$
+   \\ $\widehat{AccidentalBeqLeft}= \int policy_{\hat{a}'}(1-s_j) d\hat{\mu}$
+  \item Labor markets clear: $\hat{w}=(1-\alpha)A \hat{K}^{\alpha}\hat{L}^{-\alpha}$
+   \\ Capital markets clear: $r=\alpha A \hat{K}^{\alpha-1} \hat{L}^{1-\alpha} - \delta$
+   \\ Pension system balance: $\widehat{PensionSpending}=\tau*\hat{w}*\hat{L}$
+   \\ Government budget balance: $\hat{G}=\widehat{IncomeTaxRevenue}$
+   \\ Accidental bequest balance: $\widehat{AccidentBeq}=\widehat{AccidentalBeqLeft}/((1+g)(1+n))$
+ \end{enumerate}
+\end{definition}
+Notice that this is largely just the same definition as we had for OLG Model 6 (the model to which we added deterministic labor-augmenting productivity growth) except that many of the variables now have 'hat's on them, and some other things like the presence of (1+g) in the budget constraint and the change in the discount factor in the household problem.
+
+We can therefore just solve for this stationary general equilibrium using all the same kinds of code (but making the small changes to discount factor etc.) and get the solution for all of the 'hat' variables.
+
+If we want to recover variables like $Y$ or $w$ we can just use the expressions like $\hat{Y} =\frac{Y}{(1+g)^t (1+n)^t N_0}$ and $\hat{w} = \frac{w}{(1+g)^t}$ that we used to define the hat variables (just use them in reverse). When doing so what we set for things like $N_0$ and $A$, which define the 'starting point' are largely arbitrary (we could pick a specific year in the data to target if we wanted, but if this is our goal we should probably be solving for the general equilibrium transition paths, something not covered in this Intro to OLG).
+
+The codes do just this, creating time-series for $Y$ and $w$ (among others) and then plotting them. To save substantial rewriting of the codes I have not attempted to include the 'hat' in the variable names. Instead at the end, when recovering things like $L$ and $w$ I call them 'actual L' and 'actual w'.
+
+
+\subsection{OLG Model 9: Exotic preferences}
+We now resolve OLG Model 6 twice, once modifying the model to use Quasi-hyperbolic discounting in the household problem, and once modifying the model to use Epstein-Zin preferences in the household problem. Both of these will require changing just a few lines of code. Since the only change to the model is in the definition of the household problem, we will not repeat things like the firm problem, the general equilibrium conditions, and the definition of stationary general equilibrium here, see OLG Model 6 for these. For a more complete explanation of these exotic preferences \textcolor{blue}{\href{https://www.vfitoolkit.com/updates-blog/2021/exotic-preferences-epstein-zin-quasi-hyperbolic/}{see this link}}.
+
+Quasi-hyperbolic discounting is a standard way to model impatience. Epstein-Zin preferences separate the 'intertemporal elasticity of substitution' from the 'risk aversion', both of which are determined by the same single parameter using the standard vonNeumann-Morgenstern preferences that we have been using without explicitly mentioning them until now.
+
+\subsubsection{OLG Model 9A: Quasi-hyperbolic discounting}
+There are two variations of Quasi-hyperbolic discounting, naive and sophisticated. In naive quasi-hyperbolic discounting the agent 'naively' believes that their future self will not suffer from the same impatience as their present self, that is, they belive their future self will be an exponential discounter (their future self will actually just be a quasi-hyperbolic discounter like themselves. A sophisticated quasi-hyperbolic discounter knows that their future self will also behave as a quasi-hyperbolic discounter and takes this into account.
+
+Solving naive quasi-hyperbolic is simpler (conceptually, in codes they are equally easy). The future self solves the standard household problem of an exponential discounter that we already saw in OLG Model 6, and the value function for which we denote $V$. The naive quasi-hyperbolic discounter thus faces the household problem,
+\begin{eqnarray*}
+ \tilde{V}(a,z,e,j)&=& \max_{c,h,a'} \frac{c^{1-\sigma}}{1-\sigma} - \psi \frac{h^{1+\eta}}{1+\eta}  + \beta_0 \beta s_j E_{z',e'}[V(a',j+1,z',e')|z] \\
+&&\text{if working, }j<=Jr: Income=ra+w* \kappa_j*exp(z+e) h \\
+&&\text{if retired, }j\geq Jr: Income=ra \\
+&& IncomeTax=\eta_1+\eta_2*log(Income)*Income \\
+&&\text{if working, }j<=Jr: c+a'=(1-\tau) w \kappa_j*exp(z+e) h + (1+r) a -IncomeTax +(1+r)AccidentBeq\\
+&&\text{if retired, }j\geq Jr: c+a'=pension+ (1+r) a -IncomeTax +(1+r)AccidentBeq +\mathbb{I}_{j=J} warmglow(a') \\
+&& 0\leq h \leq 1 \\
+&& z'=\rho_z z + \epsilon, \quad \epsilon \sim N(0,\sigma_{\epsilon,z}^2) \\
+&& e \sim N(0,\sigma_{e}^2)
+\end{eqnarray*}
+Notice that there is the additional discount factor $\beta_0$, and that the left-hand side is now $\tilde{V}$, the value function of the naive quasi-hyperbolic discounter, while the right-hand side is the value function of the exponential discounter that they (incorrectly) believe their future self to be.
+
+The sophisticated quasi-hyperbolic discounter is a little more subtle to write out. They know their future self will act as a quasi-hyperbolic discounter (so use the policy function of the quasi-hyperbolic discount problem), but they discount between any two consecutive future periods using the discount factor $\beta$. So we essentially need, at each time horizon, to first get the policy using the quasi-hyperbolic discounting, and then evaluate the value function using the exponential discount factor.
+
+The value function of the sophisticated quasi-hyperbolic discounter, $\hat{V}$, is given by
+\begin{eqnarray*}
+ \hat{V}(a,z,e,j)&=& \max_{c,h,a'} \frac{c^{1-\sigma}}{1-\sigma} - \psi \frac{h^{1+\eta}}{1+\eta}  + \beta_0 \beta s_j E_{z',e'}[\underbar{V}(a',j+1,z',e')|z] \\
+&&\text{if working, }j<=Jr: Income=ra+w* \kappa_j*exp(z+e) h \\
+&&\text{if retired, }j\geq Jr: Income=ra \\
+&& IncomeTax=\eta_1+\eta_2*log(Income)*Income \\
+&&\text{if working, }j<=Jr: c+a'=(1-\tau) w \kappa_j*exp(z+e) h + (1+r) a -IncomeTax +(1+r)AccidentBeq\\
+&&\text{if retired, }j\geq Jr: c+a'=pension+ (1+r) a -IncomeTax +(1+r)AccidentBeq +\mathbb{I}_{j=J} warmglow(a') \\
+&& 0\leq h \leq 1 \\
+&& z'=\rho_z z + \epsilon, \quad \epsilon \sim N(0,\sigma_{\epsilon,z}^2) \\
+&& e \sim N(0,\sigma_{e}^2)
+\end{eqnarray*}
+and we denote the optimal policies that are the argmax of this problem by $\hat{c}$, $\hat{h}$, and $\hat{a}'$. Using these optimal polices we can define,
+\begin{eqnarray*}
+ \underbar{V}(a,z,e,j)&=& \frac{\hat{c}^{1-\sigma}}{1-\sigma} - \psi \frac{\hat{h}^{1+\eta}}{1+\eta}  + \beta_0 \beta s_j E_{z',e'}[\underbar{V}(\hat{a}',j+1,z',e')|z] \\
+&&\text{if working, }j<=Jr: Income=ra+w* \kappa_j*exp(z+e) \hat{h} \\
+&&\text{if retired, }j\geq Jr: Income=ra \\
+&& IncomeTax=\eta_1+\eta_2*log(Income)*Income \\
+&&\text{if working, }j<=Jr: \hat{c}+\hat{a}'=(1-\tau) w \kappa_j*exp(z+e) \hat{h} + (1+r) a -IncomeTax +(1+r)AccidentBeq\\
+&&\text{if retired, }j\geq Jr: \hat{c}+\hat{a}'=pension+ (1+r) a -IncomeTax +(1+r)AccidentBeq +\mathbb{I}_{j=J} warmglow(\hat{a}') \\
+&& z'=\rho_z z + \epsilon, \quad \epsilon \sim N(0,\sigma_{\epsilon,z}^2) \\
+&& e \sim N(0,\sigma_{e}^2)
+\end{eqnarray*}
+notice that we just evaluate $\underbar{V}$ using the optimal policies, and so there is no maximization involved here.
+
+
+\subsubsection{OLG Model 9B: Epstein-Zin preferences}
+The household problem to be solved is unchanged except for the use of Epstein-Zin preferences.
+\begin{eqnarray*}
+ \tilde{V}(a,z,e,j)&=& \max_{c,h,a'} \frac{c^{1-\sigma}}{1-\sigma} - \psi \frac{h^{1+\eta}}{1+\eta}  + \beta s_j E_{z',e'}[V(a',j+1,z',e')^{1+\phi}|z]^{\frac{1}{1+\phi}} \\
+&&\text{if working, }j<=Jr: Income=ra+w* \kappa_j*exp(z+e) h \\
+&&\text{if retired, }j\geq Jr: Income=ra \\
+&& IncomeTax=\eta_1+\eta_2*log(Income)*Income \\
+&&\text{if working, }j<=Jr: c+a'=(1-\tau) w \kappa_j*exp(z+e) h + (1+r) a -IncomeTax +(1+r)AccidentBeq\\
+&&\text{if retired, }j\geq Jr: c+a'=pension+ (1+r) a -IncomeTax +(1+r)AccidentBeq +\mathbb{I}_{j=J} warmglow(a') \\
+&& 0\leq h \leq 1 \\
+&& z'=\rho_z z + \epsilon, \quad \epsilon \sim N(0,\sigma_{\epsilon,z}^2) \\
+&& e \sim N(0,\sigma_{e}^2)
+\end{eqnarray*}
+where $\phi$ controls the amount of 'additional' risk aversion.
+
+We have to be careful about how warm-glow of bequests is handled when using Epstein-Zin model. See the Intro to Life-Cycle models for an explanation of Epstein-Zin preferences and the options when implementing them.
+
+
+\subsection{OLG Model 10: Permanent Types 1, Fixed effects}
+This model extends OLG Model 6. When earnings processes are estimated from the data it is standard to include a fixed-effect. We now introduce permanent types as the way for VFI Toolkit to model this: permanent type includes but is much more general than fixed type. The toolkit uses $i$ to refer to permanent types and this can be done either as just giving parameters as a vector as in this example, or by giving each permanent type a name, which is done in the next model.
+
+The household problem now includes a fixed-effect, $\gamma_i$, which depends on the permanent type of the agent.
+\begin{eqnarray*}
+ V_i(a,z,e,j)&=& \max_{c,h,a'} \frac{c^{1-\sigma}}{1-\sigma} - \psi \frac{h^{1+\eta}}{1+\eta}  + \beta s_j E_{z',e'}[V_i(a',j+1,z',e')|z] \\
+&&\text{if working, }j<=Jr: Income=ra+w* \kappa_j*exp(\gamma_i+z+e) h \\
+&&\text{if retired, }j\geq Jr: Income=ra \\
+&& IncomeTax=\eta_1+\eta_2*log(Income)*Income \\
+&&\text{if working, }j<=Jr: c+a'=(1-\tau) w \kappa_j*exp(\gamma_i+z+e) h + (1+r) a -IncomeTax +(1+r)AccidentBeq\\
+&&\text{if retired, }j\geq Jr: c+a'=pension+ (1+r) a -IncomeTax +(1+r)AccidentBeq +\mathbb{I}_{j=J} warmglow(a') \\
+&& 0\leq h \leq 1 \\
+&& z'=\rho_z z + \epsilon, \quad \epsilon \sim N(0,\sigma_{\epsilon,z}^2) \\
+&& e \sim N(0,\sigma_{e}^2)
+\end{eqnarray*}
+notice that there are now $i$ separate household problems, and hence we add a $i$ subscript to $V$.
+
+Solving this model is easy enough. First we say how many different permanent types of agents we want, we will use three ($N\_{}i=3$), and we need to create the parameter $\gamma_i$, which is vector of size 3-by-1 (or 1-by-3, doesn't matter). We also need to declare how many of agents of each type there are, or more accurately the distribution of agents over these types. This is a vector of three fractions that add to one, which we will call 'gamma$\_{}$dist', and we need to put the name of this into PTypeDistParamNames.
+
+We also need to change all the command names, which are now the same as before but with $\_{}PType$ at the end (what this means will be obvious in the codes). That is all.
+
+By default the permanent types will be assigned the names ptype001, ptype002, etc. And everything like value functions, agent distributions, and model statistics use these names (so, e.g., V.ptype001 is the value function for the first permanent type).
+
+While a lot changes behind the scenes, realistically all that is involved is just solving everything $N\_{}i$ times, and things like run times and memory usage will reflect this. By default all model statistics will report both the aggregate for the whole economy exactly as before, e.g., AllStats.K.Mean, and also will report all the same statistics conditional on permanent type of the agent, the codes show this for the life-cycle profiles.
+
+We now write out the definition of stationary general equilibrium in the model, notice that we essentially just have the household and agent distribution problems once for each agent type, while the aggregates are now defined over all the agents.
+\begin{definition}
+ A stationary equilibrium is price $r$ (and $w$), and government policies $\tau$ and $pension$ such that
+ \begin{enumerate}
+  \item Given prices ($r$ and $w$) and government policies ($\tau$, $pension$), the household value functions, $V_i$, and related policy function, $policy_i$, solve the household problem; for each $i=1,...,N\_{}i$.
+  \item The agents distribution evolves according to,
+   \\  $\mu_i(a_{j+1},z_{t+1},e_{t+1},j+1)=\int \mathbb{I}_{a_{j+1}=policy_{i,a'}} \frac{\mu_i^{j+1}}{\mu_i^j} d\mu_i(a,z,e,j) \Gamma(z_{t+1}|z_t) Pr(\epsilon_{t+1}), \; j=1,2,...,J,\text{ and } \mu_i(:,:,:,1)=jequaloneDist \; \text{ for all} i=1,2,...,N\_{}i$
+  \item The aggregates are based on household policies and agent distribution,
+   \\ $L=\sum_i \int \kappa_j exp(\gamma_i +z+e) policy_{h,i} d\mu_i$
+   \\ $K=\sum_i \int a d\mu_i$
+   \\ $PensionSpending=\sum_i \int pension \mathbb{I}_{j\geq Jr} d\mu_i$
+   \\ $IncomeTaxRevenue=\sum_i \int (\eta_1+\eta_2*log(Income)*Income) d\mu_i$
+   \\ $AccidentalBeqLeft= \sum_i \int policy_{\hat{a}'}(1-s_j) d\mu_i$
+  \item Labor markets clear: $w=(1-\alpha)A K^{\alpha}L^{-\alpha}$
+   \\ Capital markets clear: $r=\alpha A K^{\alpha-1} L^{1-\alpha} - \delta$
+   \\ Pension system balance: $PensionSpending=\tau*w*L$
+   \\ Government budget balance: $G=IncomeTaxRevenue$
+   \\ Accidental bequest balance: $AccidentBeq=AccidentalBeqLeft/(1+n)$
+ \end{enumerate}
+\end{definition}
+Note that you could write this more succinctly by putting $i$ as another dimension of the value function, and the agent distribution. We have not done so because the current way of writing the problem (with separate value functions and agent distributions for each $i$, and with aggregates written as a sum over $i$) is closer to what is being done internally and so hopefully helps make clearer what is happening.
+
+The firm side of the problem and the general equilibrium conditions are all unchanged (although of course the aggregates that go into them as inputs are different).
+

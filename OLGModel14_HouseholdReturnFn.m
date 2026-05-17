@@ -1,4 +1,4 @@
-function F=OLGModel14_HouseholdReturnFn(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,warmglow1,warmglow2,AccidentBeq,r,tau_l,tau_d,tau_cg)
+function F=OLGModel14_HouseholdReturnFn(h,sprime,s,z,e,sigma,psi,eta,agej,Jr,J,pension,w,P0,D,kappa_j,wg1,wg2,wg3,AccidentBeq,r,tau_l,tau_d,tau_cg)
 % Replace assets with 'share holdings'
 % Get rid of progressive taxes
 % Add Lhnormalize
@@ -26,7 +26,7 @@ end
 
 % Warm-glow bequest
 if agej==J % Final period
-    warmglow=warmglow1*(sprime^(1-warmglow2))/(1-warmglow2);
+    warmglow=wg1*((1+sprime/wg2)^(1-wg3))/(1-wg3);
     F=F+warmglow;
 end
 

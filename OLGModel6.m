@@ -19,13 +19,20 @@ n_z=15; % AR(1) with age-dependent params
 vfoptions.n_e=3; % iid
 N_j=Params.J; % Number of periods in finite horizon
 
+%% Divide-and-conquer and grid interpolation layer
+vfoptions.divideandconquer=1; % turn on divide-and-conquer
+vfoptions.gridinterplayer=1; % turn on grid interpolation layer
+vfoptions.ngridinterp=20; % 20 evenly-spaced points between each pair of consecutive a_grid points
+simoptions.gridinterplayer=vfoptions.gridinterplayer; % grid interpolation layer must also be set in simoptions
+simoptions.ngridinterp=vfoptions.ngridinterp;
+
 %% Parameters
 
 % Discount rate
 Params.beta = 0.96;
 % Preferences
 Params.sigma = 2; % Coeff of relative risk aversion (curvature of consumption)
-Params.eta = 1.5; % Curvature of leisure (This will end up being 1/Frisch elasty)
+Params.eta = 1.5; % Curvature of leisure (This will end up being 1/Frisch elasticity)
 Params.psi = 10; % Weight on leisure
 
 Params.A=1; % Aggregate TFP. Not actually used anywhere.
@@ -37,7 +44,7 @@ Params.delta = 0.1; % Depreciation rate of capital
 Params.agej=1:1:Params.J; % Is a vector of all the agej: 1,2,3,...,J
 Params.Jr=46;
 % Population growth rate
-Params.n=0.02; % percentage rate (expressed as fraction) at which population growths
+Params.n=0.02; % percentage rate (expressed as fraction) at which population grows
 
 % Age-dependent labor productivity units
 Params.kappa_j=[linspace(0.5,2,Params.Jr-15),linspace(2,1,14),zeros(1,Params.J-Params.Jr+1)];
@@ -73,9 +80,9 @@ Params.sj=1-Params.dj(21:101); % Conditional survival probabilities
 Params.sj(end)=0; % In the present model the last period (j=J) value of sj is actually irrelevant
 
 % Warm glow of bequest
-Params.warmglow1=0.3; % (relative) importance of bequests
-Params.warmglow2=3; % bliss point of bequests (essentially, the target amount)
-Params.warmglow3=Params.sigma; % By using the same curvature as the utility of consumption it makes it much easier to guess appropraite parameter values for the warm glow
+Params.wg1=0.3; % (relative) importance of bequests
+Params.wg2=3; % degree to which bequests are a luxury good (>=1; =1 would be a normal good)
+Params.wg3=Params.sigma; % By using the same curvature as the utility of consumption it makes it much easier to guess appropriate parameter values for the warm glow
 
 % Taxes
 Params.tau = 0.15; % Tax rate on labour income
@@ -128,10 +135,10 @@ d_grid=h_grid;
 DiscountFactorParamNames={'beta','sj'};
 
 % Notice we use 'OLGModel6_ReturnFn'
-ReturnFn=@(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau)...
-    OLGModel6_ReturnFn(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,warmglow1,warmglow2,AccidentBeq, eta1,eta2,tau);
+ReturnFn=@(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,wg1,wg2,wg3,AccidentBeq, eta1,eta2,tau)...
+    OLGModel6_ReturnFn(h,aprime,a,z,e,sigma,psi,eta,agej,Jr,J,pension,r,A,delta,alpha,kappa_j,wg1,wg2,wg3,AccidentBeq, eta1,eta2,tau);
 
-%% Now solve the value function iteration problem, just to check that things are working before we go to General Equilbrium
+%% Now solve the value function iteration problem, just to check that things are working before we go to General Equilibrium
 disp('Test ValueFnIter')
 tic;
 [V, Policy]=ValueFnIter_Case1_FHorz(n_d,n_a,n_z,N_j, d_grid, a_grid, z_grid_J, pi_z_J, ReturnFn, Params, DiscountFactorParamNames, [], vfoptions);
@@ -176,18 +183,18 @@ FnsToEvaluate.PensionSpending = @(h,aprime,a,z,e,pension,agej,Jr) (agej>=Jr)*pen
 FnsToEvaluate.AccidentalBeqLeft = @(h,aprime,a,z,e,sj) aprime*(1-sj); % Accidental bequests left by people who die
 FnsToEvaluate.IncomeTaxRevenue = @(h,aprime,a,z,e,eta1,eta2,kappa_j,r,delta,alpha,A) OLGModel6_ProgressiveIncomeTaxFn(h,aprime,a,z,e,eta1,eta2,kappa_j,r,delta,alpha,A); % Revenue raised by the progressive income tax (needed own function to avoid log(0) causing problems)
 
-% General Equilibrium conditions (these should evaluate to zero in general equilbrium)
+% General Equilibrium conditions (these should evaluate to zero in general equilibrium)
 GeneralEqmEqns.capitalmarket = @(r,K,L,alpha,delta,A) r-alpha*A*(K^(alpha-1))*(L^(1-alpha)); % interest rate equals marginal product of capital net of depreciation
 GeneralEqmEqns.pensions = @(PensionSpending,tau,L,r,A,alpha,delta) PensionSpending-tau*(A*(1-alpha)*((r+delta)/(alpha*A))^(alpha/(alpha-1)))*L; % Retirement benefits equal Payroll tax revenue: pension*fractionretired-tau*w*H
 GeneralEqmEqns.bequests = @(AccidentalBeqLeft,AccidentBeq,n) AccidentalBeqLeft/(1+n)-AccidentBeq; % Accidental bequests received equal accidental bequests left
 GeneralEqmEqns.Gtarget = @(G,GdivYtarget,A,K,L,alpha) G-GdivYtarget*(A*K^(alpha)*(L^(1-alpha))); % G is equal to the target, GdivYtarget*Y
-GeneralEqmEqns.govbudget = @(G,IncomeTaxRevenue) G-IncomeTaxRevenue; % Government budget balances (note that pensions are a seperate budget)
+GeneralEqmEqns.govbudget = @(G,IncomeTaxRevenue) G-IncomeTaxRevenue; % Government budget balances (note that pensions are a separate budget)
 % Note: the pensions general eqm condition looks more complicated just because we replaced w with the formula for w in terms of r. It is actually just the same formula as before.
 
 %% Test
 % Note: Because we used simoptions we must include this as an input
-disp('Test AggVars')
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid_J,simoptions);
+disp('Test AllStats')
+AllStats=EvalFnOnAgentDist_AllStats_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid_J,simoptions);
 
 %% Solve for the General Equilibrium
 heteroagentoptions.verbose=1;
@@ -206,7 +213,7 @@ StationaryDist=StationaryDist_FHorz_Case1(jequaloneDist,AgeWeightsParamNames,Pol
 % Can just use the same FnsToEvaluate as before.
 AgeConditionalStats=LifeCycleProfiles_FHorz_Case1(StationaryDist,Policy,FnsToEvaluate,Params,[],n_d,n_a,n_z,N_j,d_grid,a_grid,z_grid_J,simoptions);
 
-%% Plot the life cycle profiles of capital and labour for the inital and final eqm.
+%% Plot the life cycle profiles of capital and labour for the initial and final eqm.
 
 figure(1)
 subplot(3,1,1); plot(1:1:Params.J,AgeConditionalStats.H.Mean)
@@ -222,10 +229,10 @@ title('Life Cycle Profile: Assets')
 % Add consumption to the FnsToEvaluate
 FnsToEvaluate.Consumption=@(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq) OLGModel6_ConsumptionFn(h,aprime,a,z,e,agej,Jr,r,pension,tau,kappa_j,alpha,delta,A,eta1,eta2,AccidentBeq);
 
-AggVars=EvalFnOnAgentDist_AggVars_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid_J,simoptions);
+AllStats=EvalFnOnAgentDist_AllStats_FHorz_Case1(StationaryDist, Policy, FnsToEvaluate, Params, [], n_d, n_a, n_z,N_j, d_grid, a_grid, z_grid_J,simoptions);
 
 % GDP
-Y=Params.A*(AggVars.K.Mean^Params.alpha)*(AggVars.L.Mean^(1-Params.alpha));
+Y=Params.A*(AllStats.K.Mean^Params.alpha)*(AllStats.L.Mean^(1-Params.alpha));
 
 % wage (note that this is calculation is only valid because we have Cobb-Douglas production function and are looking at a stationary general equilibrium)
 KdivL=((Params.r+Params.delta)/(Params.alpha*Params.A))^(1/(Params.alpha-1));
@@ -233,9 +240,9 @@ w=Params.A*(1-Params.alpha)*(KdivL^Params.alpha); % wage rate (per effective lab
 
 fprintf('Following are some aggregates of the model economy: \n')
 fprintf('Output: Y=%8.2f \n',Y)
-fprintf('Capital-Output ratio: K/Y=%8.2f \n',AggVars.K.Mean/Y)
-fprintf('Consumption-Output ratio: C/Y=%8.2f \n',AggVars.Consumption.Mean/Y)
-fprintf('Average labor productivity: Y/H=%8.2f \n', Y/AggVars.H.Mean)
+fprintf('Capital-Output ratio: K/Y=%8.2f \n',AllStats.K.Mean/Y)
+fprintf('Consumption-Output ratio: C/Y=%8.2f \n',AllStats.Consumption.Mean/Y)
+fprintf('Average labor productivity: Y/H=%8.2f \n', Y/AllStats.H.Mean)
 fprintf('Government-to-Output ratio: G/Y=%8.2f \n', Params.G/Y)
 fprintf('Accidental Bequests as fraction of GDP: %8.2f \n',Params.AccidentBeq/Y)
 fprintf('Wage: w=%8.2f \n',w)
