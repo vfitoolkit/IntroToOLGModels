@@ -21,7 +21,7 @@ else
     elseif agej<S_agej_peak_last
         % We have been holding since peak acquisition
         agej_bought=S_agej_peak_first;
-        Plag=P0*(1-2*r)^(ypp*(agej-agej_bought));
+        Plag=P0*(1-2*r)^(agej-agej_bought);
     elseif S_agej_peak_last==S_agej_last % Bulk liquidation
         % Sell all remaining shares from first acquisition to buy-point (using geometric mean to average acquisition cost)
         agej_bought=S_agej_peak_first-sqrt(S_agej_peak_first-S_agej_first);
